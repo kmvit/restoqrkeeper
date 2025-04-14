@@ -10,7 +10,6 @@ services:
       - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-      - ./static:/app/static
     env_file:
       - ./.env
     environment:

@@ -25,14 +25,6 @@ RUN mkdir -p /app/staticfiles /app/media && \
 # Копирование проекта
 COPY . .
 
-# Создание директорий для статических файлов в корне проекта
-RUN mkdir -p /app/static/css /app/static/js /app/static/icons/fonts && \
-    chmod -R 755 /app/static
-
-# Скачивание Bootstrap и других статических файлов
-RUN pip install requests && \
-    python scripts/download_bootstrap.py
-
 # Сборка статических файлов
 RUN python manage.py collectstatic --noinput --clear
 

@@ -90,19 +90,16 @@ docker-compose logs -f
 docker-compose exec web python manage.py <command>
 ```
 
-### Важное замечание о статических файлах
+### Статические файлы
 
-Проект использует директорию `static/` для хранения статических файлов (CSS, JavaScript, иконки). Эта директория монтируется в контейнер и должна быть заполнена перед запуском проекта. 
+Проект использует CDN для подключения Bootstrap и Bootstrap Icons:
+- Bootstrap CSS: https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css
+- Bootstrap Icons: https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css
+- Bootstrap JS: https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js
 
-Если вы видите предупреждение `STATICFILES_W004` при запуске, убедитесь, что:
-1. Директория `static/` существует в корне проекта
-2. В ней есть все необходимые поддиректории: `css/`, `js/`, `icons/`
-3. Поддиректории не пусты
+Это позволяет упростить настройку проекта и улучшить производительность.
 
-Для автоматического скачивания и установки Bootstrap и других статических файлов можно использовать скрипт:
-```bash
-python scripts/download_bootstrap.py
-```
+Собственные статические файлы проекта (CSS, JavaScript, изображения) хранятся в директории `staticfiles`.
 
 ## Лицензия
 
