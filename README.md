@@ -145,6 +145,67 @@ docker-compose down
 docker-compose up -d
 ```
 
+### Настройка обратного прокси для использования без указания порта
+
+Если у вас уже есть веб-сервер, запущенный на порту 80, и вы хотите использовать новый домен без указания порта (стандартный HTTP порт 80), вам нужно настроить обратный прокси на существующем сервере.
+
+В проекте есть готовый шаблон конфигурации для Nginx: `nginx/external_proxy.conf`. Выполните следующие шаги для настройки:
+
+1. Скопируйте содержимое файла `nginx/external_proxy.conf` на ваш основной сервер
+2. Создайте файл `/etc/nginx/sites-available/yourproject.conf` и вставьте туда скопированную конфигурацию
+3. Активируйте конфигурацию, создав символическую ссылку:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/yourproject.conf /etc/nginx/sites-enabled/
+   ```
+4. Проверьте конфигурацию Nginx:
+   ```bash
+   sudo nginx -t
+   ```
+5. Перезапустите Nginx:
+   ```bash
+   sudo systemctl restart nginx
+   ```
+
+После этого ваше приложение будет доступно по адресу http://yourproject.website без указания порта.
+
+#### Для Nginx
+
+Если ваш существующий веб-сервер - Nginx, добавьте в его конфигурацию:
+
+```nginx
+server {
+    listen 80;
+    server_name yourproject.website;
+    
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+#### Для Apache
+
+Если ваш существующий веб-сервер - Apache, убедитесь, что модули `proxy` и `proxy_http` включены, и добавьте в конфигурацию виртуального хоста:
+
+```apache
+<VirtualHost *:80>
+    ServerName yourproject.website
+    
+    ProxyPreserveHost On
+    ProxyPass / http://localhost:8080/
+    ProxyPassReverse / http://localhost:8080/
+    
+    ErrorLog ${APACHE_LOG_DIR}/yourproject-error.log
+    CustomLog ${APACHE_LOG_DIR}/yourproject-access.log combined
+</VirtualHost>
+```
+
+После настройки обратного прокси перезагрузите конфигурацию вашего веб-сервера, и ваше приложение будет доступно по адресу http://yourproject.website без указания порта.
+
 ### Пример полной конфигурации
 
 Для примера, если у вас есть домен yourproject.website, конфигурация будет выглядеть так:
