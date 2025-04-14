@@ -112,4 +112,56 @@ FORTEBANK_SECRET_KEY=your_secret_key
 RKEEPER_API_URL=http://your-rkeeper-server/api
 RKEEPER_USERNAME=your_username
 RKEEPER_PASSWORD=your_password
-``` 
+```
+
+## Настройка домена
+
+Для настройки нового домена yourproject.website необходимо внести изменения в два файла:
+
+1. В файле `.env` добавьте домен в список разрешенных хостов и обновите основной URL сайта:
+
+```
+# Обновите список разрешенных хостов
+DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1] yourproject.website
+
+# Измените основной URL сайта
+SITE_URL=http://yourproject.website
+```
+
+2. В файле `nginx/nginx.conf` добавьте домен в директиву `server_name`:
+
+```nginx
+server {
+    listen 80;
+    server_name localhost yourproject.website;
+    # остальная конфигурация...
+}
+```
+
+3. После внесения изменений перезапустите контейнеры:
+
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+### Пример полной конфигурации
+
+Для примера, если у вас есть домен yourproject.website, конфигурация будет выглядеть так:
+
+В `.env`:
+```
+DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1] yourproject.website
+SITE_URL=http://yourproject.website
+```
+
+В `nginx/nginx.conf`:
+```nginx
+server {
+    listen 80;
+    server_name localhost yourproject.website;
+    # остальная конфигурация...
+}
+```
+
+Такой подход позволяет быстро менять домены без редактирования кода приложения. 
