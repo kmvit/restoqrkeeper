@@ -18,14 +18,23 @@ COPY requirements.txt .
 # Установка зависимостей Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Создание директорий для статических файлов и установка прав
+RUN mkdir -p /app/staticfiles /app/media && \
+    chmod -R 755 /app/staticfiles /app/media
+
 # Копирование проекта
 COPY . .
 
+# Создание директорий для статических файлов в корне проекта
+RUN mkdir -p /app/static/css /app/static/js /app/static/icons/fonts && \
+    chmod -R 755 /app/static
+
 # Скачивание Bootstrap и других статических файлов
 RUN pip install requests && \
-    mkdir -p static/css static/js static/icons && \
-    python scripts/download_bootstrap.py && \
-    python manage.py collectstatic --noinput
+    python scripts/download_bootstrap.py
+
+# Сборка статических файлов
+RUN python manage.py collectstatic --noinput --clear
 
 # Запуск приложения
 CMD ["gunicorn", "restaurant_project.wsgi:application", "--bind", "0.0.0.0:8000"] 

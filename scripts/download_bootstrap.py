@@ -26,6 +26,8 @@ def download_file(url, save_path):
 def main():
     # Базовый путь для статических файлов
     base_dir = Path(__file__).resolve().parent.parent
+    
+    # Создаем директории для статических файлов в корне проекта
     static_dir = base_dir / 'static'
     
     # Создаем директории
