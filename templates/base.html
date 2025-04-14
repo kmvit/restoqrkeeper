@@ -6,107 +6,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.xyz/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.xyz/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Основные стили -->
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Дополнительная конфигурация Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        info: '#06b6d4'
+                    }
+                }
+            }
         }
-        
-        .navbar-brand {
-            font-weight: bold;
-        }
-        
-        .cart-icon {
-            position: relative;
-        }
-        
-        .cart-count {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background-color: #dc3545;
-            color: white;
-            font-size: 0.7rem;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-    </style>
+    </script>
     
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="bg-gray-100 font-sans">
     <!-- Навигационная панель -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">{{ SITE_NAME }}</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'menu:menu_list' %}">Меню</a>
-                    </li>
+    <nav class="bg-gray-800 text-white">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <a class="font-bold text-xl" href="/">{{ SITE_NAME }}</a>
+                
+                <div class="hidden md:flex space-x-4 items-center">
+                    <a class="hover:text-gray-300" href="{% url 'menu:menu_list' %}">Меню</a>
                     <!-- Дополнительные пункты меню при необходимости -->
-                </ul>
-                <div class="d-flex">
-                    <a href="{% url 'orders:cart' %}" class="btn btn-outline-light cart-icon">
-                        <i class="bi bi-cart"></i>
-                        <span class="cart-count">0</span>
+                    
+                    <a href="{% url 'orders:cart' %}" class="ml-4 relative">
+                        <i class="bi bi-cart text-xl"></i>
+                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center cart-count">0</span>
                     </a>
                 </div>
+                
+                <!-- Мобильное меню -->
+                <button class="md:hidden text-white focus:outline-none" id="mobile-menu-button">
+                    <i class="bi bi-list text-2xl"></i>
+                </button>
+            </div>
+            
+            <!-- Мобильное меню (скрыто по умолчанию) -->
+            <div class="md:hidden hidden pt-4 pb-2" id="mobile-menu">
+                <a class="block py-2 hover:text-gray-300" href="{% url 'menu:menu_list' %}">Меню</a>
+                <!-- Дополнительные пункты -->
+                <a class="block py-2 hover:text-gray-300" href="{% url 'orders:cart' %}">
+                    Корзина <span class="cart-count bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 ml-2">0</span>
+                </a>
             </div>
         </div>
     </nav>
     
     <!-- Основное содержимое страницы -->
-    <main class="py-4">
+    <main class="container mx-auto px-4 py-8">
         {% block content %}{% endblock %}
     </main>
     
     <!-- Подвал сайта -->
-    <footer class="bg-dark text-white py-4 mt-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>{{ SITE_NAME }}</h5>
+    <footer class="bg-gray-800 text-white py-8 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h5 class="text-xl font-bold mb-4">{{ SITE_NAME }}</h5>
                     <p>Лучший ресторан в городе</p>
                 </div>
-                <div class="col-md-3">
-                    <h5>Контакты</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="bi bi-geo-alt"></i> Казахстан, Алматы</li>
-                        <li><i class="bi bi-telephone"></i> +7 (999) 999-99-99</li>
-                        <li><i class="bi bi-envelope"></i> info@{{ SITE_NAME }}</li>
+                <div>
+                    <h5 class="text-xl font-bold mb-4">Контакты</h5>
+                    <ul class="space-y-2">
+                        <li><i class="bi bi-geo-alt mr-2"></i> Казахстан, Алматы</li>
+                        <li><i class="bi bi-telephone mr-2"></i> +7 (999) 999-99-99</li>
+                        <li><i class="bi bi-envelope mr-2"></i> info@{{ SITE_NAME }}</li>
                     </ul>
                 </div>
-                <div class="col-md-3">
-                    <h5>Режим работы</h5>
+                <div>
+                    <h5 class="text-xl font-bold mb-4">Режим работы</h5>
                     <p>Пн-Пт: 10:00-20:00</p>
                     <p>Сб-Вс: 10:00-18:00</p>
                 </div>
             </div>
-            <hr>
+            <hr class="my-6 border-gray-700">
             <div class="text-center">
                 <p>&copy; {{ CURRENT_YEAR }} {{ SITE_NAME }}. Все права защищены.</p>
             </div>
         </div>
     </footer>
     
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
+    // Переключение мобильного меню
+    document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenu.classList.toggle('hidden');
+    });
+    
     // Загружаем количество товаров в корзине при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         updateCartCount();

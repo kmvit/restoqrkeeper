@@ -4,84 +4,49 @@
 
 {% block extra_css %}
 <style>
-    .success-icon {
-        font-size: 5rem;
-        color: #28a745;
-        margin-bottom: 2rem;
-    }
-    
-    .order-success {
-        text-align: center;
-        padding: 2rem;
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    }
-    
-    .order-details {
-        margin-top: 2rem;
-        padding: 1rem;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-    
-    .order-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .order-total {
-        font-weight: bold;
-        margin-top: 1rem;
-        text-align: right;
-        font-size: 1.2rem;
-    }
-    
-    .back-to-menu {
-        margin-top: 2rem;
-    }
+    /* Используем утилитарные классы Tailwind вместо кастомного CSS */
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="order-success">
-                <div class="success-icon">
-                    <i class="bi bi-check-circle"></i>
-                </div>
-                <h1>Заказ успешно оформлен!</h1>
-                <p class="lead">Ваш заказ № {{ order.id }} принят и передан на кухню.</p>
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="p-8 text-center">
+            <div class="text-green-500 mb-6">
+                <i class="bi bi-check-circle text-8xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold mb-2">Заказ успешно оформлен!</h1>
+            <p class="text-xl text-gray-600 mb-8">Ваш заказ № {{ order.id }} принят и передан на кухню.</p>
+            
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-bold mb-4 text-left">Детали заказа</h3>
                 
-                <div class="order-details">
-                    <h3>Детали заказа</h3>
-                    
-                    {% for item in order.items.all %}
-                    <div class="order-item">
-                        <div>
-                            <strong>{{ item.menu_item.name }}</strong> × {{ item.quantity }}
-                        </div>
-                        <div>
-                            {{ item.total }} ₽
-                        </div>
+                {% for item in order.items.all %}
+                <div class="flex justify-between py-3 {% if not forloop.last %}border-b border-gray-200{% endif %}">
+                    <div class="font-medium">
+                        {{ item.menu_item.name }} × {{ item.quantity }}
                     </div>
-                    {% endfor %}
-                    
-                    <div class="order-total">
-                        Итого: {{ order.total_amount }} ₽
+                    <div class="font-bold">
+                        {{ item.total }} {{ CURRENCY_SYMBOL }}
                     </div>
                 </div>
+                {% endfor %}
                 
-                <p class="mt-4">Статус заказа: <span class="badge bg-success">{{ order.get_status_display }}</span></p>
-                <p>Время приготовления: примерно 15-20 минут</p>
-                
-                <div class="back-to-menu">
-                    <a href="{% url 'menu:menu_list' %}" class="btn btn-primary">Вернуться в меню</a>
+                <div class="flex justify-between pt-4 mt-4 border-t border-gray-300 text-lg font-bold">
+                    <div>Итого:</div>
+                    <div>{{ order.total_amount }} {{ CURRENCY_SYMBOL }}</div>
                 </div>
+            </div>
+            
+            <div class="mb-8">
+                <p class="mb-2">Статус заказа: <span class="inline-block px-3 py-1 text-sm font-semibold bg-green-100 text-green-800 rounded-full">{{ order.get_status_display }}</span></p>
+                <p class="text-gray-600">Время приготовления: примерно 15-20 минут</p>
+            </div>
+            
+            <div>
+                <a href="{% url 'menu:menu_list' %}" class="inline-block px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                    Вернуться в меню
+                </a>
             </div>
         </div>
     </div>
