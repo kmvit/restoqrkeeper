@@ -48,7 +48,14 @@ class CartView(View):
 @require_POST
 def add_to_cart(request):
     try:
+        print("Headers:", dict(request.headers))
+        print("Request method:", request.method)
+        print("Raw body:", request.body)
+        print("POST data:", request.POST)
+        
         data = json.loads(request.body) if request.body else request.POST
+        print("Parsed data:", data)
+        
         item_id = str(data.get('item_id'))  # Преобразуем в строку
         quantity = int(data.get('quantity', 1))
         
@@ -88,11 +95,20 @@ def add_to_cart(request):
                 'success': False,
                 'message': 'Товар не найден'
             }, status=404)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {str(e)}")
         return JsonResponse({
             'success': False, 
             'message': 'Неверный формат данных'
         }, status=400)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Unexpected error: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Внутренняя ошибка сервера: {str(e)}'
+        }, status=500)
 
 @require_POST
 def update_cart_item(request):
