@@ -5,7 +5,7 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-domains=(example.com www.example.com)
+domains=(2a0aa2c90f37.vps.myjino.ru)
 rsa_key_size=4096
 data_path="./nginx/ssl"
 email="your-email@example.com" # Замените на свой email
