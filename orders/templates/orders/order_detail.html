@@ -74,7 +74,7 @@
                             <!-- Создан -->
                             <div class="text-center">
                                 <div class="w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-full {% if order.status != 'cancelled' %}bg-green-500 text-white{% else %}bg-gray-300 text-gray-600{% endif %}">
-                                    <i class="bi bi-cart text-sm"></i>
+                                    <i class="fa-solid fa-cart-shopping text-sm"></i>
                                 </div>
                                 <span class="text-xs block {% if order.status != 'cancelled' %}text-green-600{% else %}text-gray-500{% endif %}">Создан</span>
                             </div>
@@ -82,7 +82,7 @@
                             <!-- Оплачен -->
                             <div class="text-center">
                                 <div class="w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-full {% if order.status == 'paid' or order.status == 'processing' or order.status == 'completed' %}bg-green-500 text-white{% else %}bg-gray-300 text-gray-600{% endif %}">
-                                    <i class="bi bi-credit-card text-sm"></i>
+                                    <i class="fa-solid fa-credit-card text-sm"></i>
                                 </div>
                                 <span class="text-xs block {% if order.status == 'paid' or order.status == 'processing' or order.status == 'completed' %}text-green-600{% else %}text-gray-500{% endif %}">Оплачен</span>
                             </div>
@@ -90,7 +90,7 @@
                             <!-- В обработке -->
                             <div class="text-center">
                                 <div class="w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-full {% if order.status == 'processing' or order.status == 'completed' %}bg-green-500 text-white{% else %}bg-gray-300 text-gray-600{% endif %}">
-                                    <i class="bi bi-clock text-sm"></i>
+                                    <i class="fa-solid fa-clock text-sm"></i>
                                 </div>
                                 <span class="text-xs block {% if order.status == 'processing' or order.status == 'completed' %}text-green-600{% else %}text-gray-500{% endif %}">В обработке</span>
                             </div>
@@ -98,7 +98,7 @@
                             <!-- Завершен -->
                             <div class="text-center">
                                 <div class="w-8 h-8 mx-auto mb-2 flex items-center justify-center rounded-full {% if order.status == 'completed' %}bg-green-500 text-white{% else %}bg-gray-300 text-gray-600{% endif %}">
-                                    <i class="bi bi-check-circle text-sm"></i>
+                                    <i class="fa-solid fa-circle-check text-sm"></i>
                                 </div>
                                 <span class="text-xs block {% if order.status == 'completed' %}text-green-600{% else %}text-gray-500{% endif %}">Завершен</span>
                             </div>
