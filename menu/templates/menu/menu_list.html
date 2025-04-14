@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}Меню - {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-nav {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .category-nav .nav-link {
+        display: inline-block;
+        margin-right: 10px;
+        border-radius: 20px;
+        padding: 8px 16px;
+        transition: all 0.3s;
+    }
+    
+    .category-nav .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .menu-item-card {
+        height: 100%;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .menu-item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .menu-item-image {
+        height: 200px;
+        object-fit: cover;
+        cursor: pointer;
+    }
+    
+    .menu-item-price {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .menu-item-quantity {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .menu-item-quantity.low {
+        color: #dc3545;
+    }
+    
+    .add-to-cart-btn {
+        width: 80%;
+    }
+    
+    .modal-image {
+        max-height: 80vh;
+        object-fit: contain;
+    }
+    
+    .menu-item {
+        transition: opacity 0.3s ease-in-out;
+    }
+    
+    .menu-item.hidden {
+        display: none;
+        opacity: 0;
+    }
+    
+    .menu-item.visible {
+        display: block;
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-4">Меню ресторана {{ SITE_NAME }}</h1>
+    
+    <div class="category-nav">
+        <div class="nav nav-pills">
+            <a class="nav-link active" href="#all" data-category="all">Все</a>
+            {% for category in categories %}
+                <a class="nav-link" href="#category-{{ category.id }}" data-category="category-{{ category.id }}">{{ category.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for item in items %}
+            <div class="col-md-4 col-lg-3 mb-4 menu-item visible" data-category="category-{{ item.category.id }}">
+                <div class="card menu-item-card">
+                    <img src="{{ item.photo.url }}" class="card-img-top menu-item-image" alt="{{ item.name }}" 
+                         data-bs-toggle="modal" data-bs-target="#imageModal{{ item.id }}">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ item.name }}</h5>
+                        <p class="card-text flex-grow-1">{{ item.description|truncatechars:100 }}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="menu-item-price">{{ item.price|default:"0"|floatformat:2 }} {{ CURRENCY_SYMBOL }}</span>
+                            <span class="menu-item-quantity {% if item.quantity < 5 %}low{% endif %}">
+                                {% if item.quantity > 0 %}
+                                    В наличии: {{ item.quantity }}
+                                {% else %}
+                                    Нет в наличии
+                                {% endif %}
+                            </span>
+                        </div>
+                        <button class="btn btn-primary add-to-cart-btn" 
+                                data-item-id="{{ item.id }}" 
+                                {% if item.quantity <= 0 %}disabled{% endif %}>
+                            <i class="bi bi-cart-plus"></i> Добавить в корзину
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Модальное окно для увеличения изображения -->
+            <div class="modal fade" id="imageModal{{ item.id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ item.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="imageModalLabel{{ item.id }}">{{ item.name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="{{ item.photo.url }}" class="img-fluid modal-image" alt="{{ item.name }}">
+                        </div>
+                        <div class="modal-footer">
+                            <div class="d-flex justify-content-between w-100">
+                                <div>
+                                    <span class="menu-item-price">{{ item.price|default:"0"|floatformat:2 }} {{ CURRENCY_SYMBOL }}</span>
+                                </div>
+                                <button class="btn btn-primary add-to-cart-btn" 
+                                        data-item-id="{{ item.id }}" 
+                                        {% if item.quantity <= 0 %}disabled{% endif %}>
+                                    <i class="bi bi-cart-plus"></i> Добавить в корзину
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    В меню пока нет доступных позиций.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Фильтрация по категориям
+    const categoryLinks = document.querySelectorAll('.category-nav .nav-link');
+    categoryLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = this.dataset.category;
+            
+            // Обновляем активную вкладку
+            categoryLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Показываем/скрываем элементы меню
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                if (category === 'all' || item.dataset.category === category) {
+                    item.classList.remove('hidden');
+                    item.classList.add('visible');
+                } else {
+                    item.classList.remove('visible');
+                    item.classList.add('hidden');
+                }
+            });
+        });
+    });
+    
+    // Добавление в корзину
+    const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+    addToCartButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            console.log('Adding item to cart:', itemId);
+            
+            // Отправляем запрос на сервер для добавления товара в корзину
+            fetch('/orders/cart/add/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    quantity: 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем счетчик корзины
+                    const cartCountElements = document.querySelectorAll('.cart-count');
+                    cartCountElements.forEach(el => {
+                        el.textContent = data.count;
+                    });
+                    
+                    // Показываем уведомление об успешном добавлении
+                    showNotification('Товар добавлен в корзину', 'success');
+                } else {
+                    // Показываем уведомление об ошибке
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding item to cart:', error);
+                showNotification('Произошла ошибка при добавлении товара', 'error');
+            });
+        });
+    });
+    
+    // Функция для показа уведомлений
+    function showNotification(message, type = 'success') {
+        const notificationContainer = document.createElement('div');
+        notificationContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        const toastHeader = document.createElement('div');
+        toastHeader.className = 'toast-header';
+        
+        const title = document.createElement('strong');
+        title.className = 'me-auto';
+        title.textContent = type === 'success' ? 'Уведомление' : 'Ошибка';
+        
+        const closeButton = document.createElement('button');
+        closeButton.className = 'btn-close';
+        closeButton.setAttribute('data-bs-dismiss', 'toast');
+        closeButton.setAttribute('aria-label', 'Close');
+        
+        const toastBody = document.createElement('div');
+        toastBody.className = 'toast-body';
+        toastBody.textContent = message;
+        
+        toastHeader.appendChild(title);
+        toastHeader.appendChild(closeButton);
+        
+        toast.appendChild(toastHeader);
+        toast.appendChild(toastBody);
+        
+        notificationContainer.appendChild(toast);
+        document.body.appendChild(notificationContainer);
+        
+        // Автоматически удаляем уведомление через 3 секунды
+        setTimeout(() => {
+            notificationContainer.remove();
+        }, 3000);
+        
+        // Закрытие по клику на кнопку закрытия
+        closeButton.addEventListener('click', () => {
+            notificationContainer.remove();
+        });
+    }
+    
+    // Функция для получения CSRF-токена из cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Заказ #{{ order.id }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Заказ #{{ order.id }}</h2>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Информация о заказе</h5>
+                <p class="card-text">
+                    <strong>Номер стола:</strong> {{ order.table_number }}
+                </p>
+                <p class="card-text">
+                    <strong>Статус:</strong> 
+                    <span class="badge bg-{{ order.status|status_color }}">
+                        {{ order.get_status_display }}
+                    </span>
+                </p>
+                <p class="card-text">
+                    <strong>Дата создания:</strong> {{ order.created_at|date:"d.m.Y H:i" }}
+                </p>
+                {% if order.rkeeper_order_id %}
+                <p class="card-text">
+                    <strong>ID заказа в R-Keeper:</strong> {{ order.rkeeper_order_id }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Наименование</th>
+                        <th>Цена</th>
+                        <th>Количество</th>
+                        <th>Итого</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr>
+                        <td>{{ item.menu_item.name }}</td>
+                        <td>{{ item.price|floatformat:2 }} {{ CURRENCY_SYMBOL }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.total|floatformat:2 }} {{ CURRENCY_SYMBOL }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                        <td><strong>{{ formatted_total }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Статус заказа</h5>
+                <div class="order-status-timeline">
+                    <div class="status-item {% if order.status != 'cancelled' %}active{% endif %}">
+                        <i class="bi bi-cart"></i>
+                        <span>Заказ создан</span>
+                    </div>
+                    <div class="status-item {% if order.status == 'paid' or order.status == 'processing' or order.status == 'completed' %}active{% endif %}">
+                        <i class="bi bi-credit-card"></i>
+                        <span>Оплачен</span>
+                    </div>
+                    <div class="status-item {% if order.status == 'processing' or order.status == 'completed' %}active{% endif %}">
+                        <i class="bi bi-clock"></i>
+                        <span>В обработке</span>
+                    </div>
+                    <div class="status-item {% if order.status == 'completed' %}active{% endif %}">
+                        <i class="bi bi-check-circle"></i>
+                        <span>Завершен</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.order-status-timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.order-status-timeline::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+.status-item {
+    position: relative;
+    text-align: center;
+    margin-bottom: 10px;
+    z-index: 2;
+}
+
+.status-item i {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.status-item.active i {
+    background: #28a745;
+    color: white;
+}
+
+.status-item span {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.status-item.active span {
+    color: #28a745;
+}
+</style>
+{% endblock %} 

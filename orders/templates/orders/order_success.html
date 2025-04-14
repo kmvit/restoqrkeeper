@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Заказ оформлен - {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-icon {
+        font-size: 5rem;
+        color: #28a745;
+        margin-bottom: 2rem;
+    }
+    
+    .order-success {
+        text-align: center;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .order-details {
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .order-total {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: right;
+        font-size: 1.2rem;
+    }
+    
+    .back-to-menu {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="order-success">
+                <div class="success-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h1>Заказ успешно оформлен!</h1>
+                <p class="lead">Ваш заказ № {{ order.id }} принят и передан на кухню.</p>
+                
+                <div class="order-details">
+                    <h3>Детали заказа</h3>
+                    
+                    {% for item in order.items.all %}
+                    <div class="order-item">
+                        <div>
+                            <strong>{{ item.menu_item.name }}</strong> × {{ item.quantity }}
+                        </div>
+                        <div>
+                            {{ item.total }} ₽
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="order-total">
+                        Итого: {{ order.total_amount }} ₽
+                    </div>
+                </div>
+                
+                <p class="mt-4">Статус заказа: <span class="badge bg-success">{{ order.get_status_display }}</span></p>
+                <p>Время приготовления: примерно 15-20 минут</p>
+                
+                <div class="back-to-menu">
+                    <a href="{% url 'menu:menu_list' %}" class="btn btn-primary">Вернуться в меню</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

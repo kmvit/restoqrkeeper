@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Корзина - {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+    .cart-item img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 1rem;
+    }
+    .cart-item-details {
+        flex-grow: 1;
+    }
+    .cart-item-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .cart-item-price {
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+    .cart-item-quantity {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .quantity-btn {
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .quantity-input {
+        width: 50px;
+        text-align: center;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0.25rem;
+    }
+    .cart-total {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .checkout-btn {
+        display: block;
+        width: 100%;
+        padding: 1rem;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        margin-top: 1rem;
+        cursor: pointer;
+    }
+    .checkout-btn:hover {
+        background: #218838;
+    }
+    .empty-cart {
+        text-align: center;
+        padding: 3rem;
+    }
+    .empty-cart img {
+        width: 200px;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Корзина</h1>
+    
+    <div id="cart-items">
+        {% if cart_items %}
+            {% for item in cart_items %}
+            <div class="cart-item" data-item-id="{{ item.id }}">
+                <img src="{{ item.photo_url }}" alt="{{ item.name }}">
+                <div class="cart-item-details">
+                    <div class="cart-item-title">{{ item.name }}</div>
+                    <div class="cart-item-price">{{ item.price }} ₽</div>
+                    <div class="cart-item-quantity">
+                        <button class="quantity-btn decrease">-</button>
+                        <input type="number" class="quantity-input" value="{{ item.quantity }}" min="1">
+                        <button class="quantity-btn increase">+</button>
+                    </div>
+                </div>
+                <button class="remove-item">✕</button>
+            </div>
+            {% endfor %}
+            
+            <div class="cart-total">
+                <h3>Итого: <span id="total-amount">{{ total_amount }}</span> ₽</h3>
+                <a href="{% url 'orders:checkout' %}" class="checkout-btn">Оформить заказ</a>
+            </div>
+        {% else %}
+            <div class="empty-cart">
+                <img src="/static/images/empty-cart.png" alt="Пустая корзина">
+                <h2>Ваша корзина пуста</h2>
+                <p>Перейдите в меню, чтобы добавить товары</p>
+                <a href="{% url 'menu:menu_list' %}" class="btn btn-primary">Перейти в меню</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cartItems = document.querySelectorAll('.cart-item');
+    
+    cartItems.forEach(item => {
+        const itemId = item.dataset.itemId;
+        const quantityInput = item.querySelector('.quantity-input');
+        const decreaseBtn = item.querySelector('.decrease');
+        const increaseBtn = item.querySelector('.increase');
+        const removeBtn = item.querySelector('.remove-item');
+        
+        decreaseBtn.addEventListener('click', () => {
+            const currentValue = parseInt(quantityInput.value);
+            if (currentValue > 1) {
+                updateQuantity(itemId, currentValue - 1);
+            }
+        });
+        
+        increaseBtn.addEventListener('click', () => {
+            const currentValue = parseInt(quantityInput.value);
+            updateQuantity(itemId, currentValue + 1);
+        });
+        
+        quantityInput.addEventListener('change', () => {
+            const newValue = parseInt(quantityInput.value);
+            if (newValue > 0) {
+                updateQuantity(itemId, newValue);
+            }
+        });
+        
+        removeBtn.addEventListener('click', () => {
+            removeItem(itemId);
+        });
+    });
+    
+    function updateQuantity(itemId, quantity) {
+        fetch('/orders/cart/update/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCartDisplay();
+            } else {
+                // В случае ошибки показываем сообщение
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating quantity:', error);
+            alert('Произошла ошибка при обновлении количества');
+        });
+    }
+    
+    function removeItem(itemId) {
+        fetch('/orders/cart/remove/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                item_id: itemId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCartDisplay();
+            }
+        });
+    }
+    
+    function updateCartDisplay() {
+        fetch('/orders/cart/data/')
+        .then(response => response.json())
+        .then(data => {
+            const cartItemsContainer = document.getElementById('cart-items');
+            if (data.items.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="empty-cart">
+                        <img src="/static/images/empty-cart.png" alt="Пустая корзина">
+                        <h2>Ваша корзина пуста</h2>
+                        <p>Перейдите в меню, чтобы добавить товары</p>
+                        <a href="{% url 'menu:menu_list' %}" class="btn btn-primary">Перейти в меню</a>
+                    </div>
+                `;
+            } else {
+                location.reload();
+            }
+        });
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %} 

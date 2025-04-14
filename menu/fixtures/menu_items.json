@@ -1,0 +1,170 @@
+[
+  {
+    "model": "menu.menuitem",
+    "pk": 1,
+    "fields": {
+      "name": "Бефстроганов",
+      "photo": "menu_photos/beef_stroganoff.jpg",
+      "description": "Говядина, сметана, лук, грибы, специи",
+      "price": "1500.00",
+      "quantity": 20,
+      "category": 1
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 2,
+    "fields": {
+      "name": "Стейк из говядины",
+      "photo": "menu_photos/beef_steak.jpg",
+      "description": "Говядина, соль, перец, розмарин",
+      "price": "2800.00",
+      "quantity": 15,
+      "category": 1
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 3,
+    "fields": {
+      "name": "Куриная грудка на гриле",
+      "photo": "menu_photos/grilled_chicken.jpg",
+      "description": "Куриная грудка, оливковое масло, специи",
+      "price": "1200.00",
+      "quantity": 25,
+      "category": 1
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 4,
+    "fields": {
+      "name": "Борщ",
+      "photo": "menu_photos/borsch.jpg",
+      "description": "Свекла, капуста, картофель, морковь, лук, говядина, сметана",
+      "price": "900.00",
+      "quantity": 30,
+      "category": 2
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 5,
+    "fields": {
+      "name": "Грибной суп",
+      "photo": "menu_photos/mushroom_soup.jpg",
+      "description": "Грибы, картофель, морковь, лук, сливки",
+      "price": "850.00",
+      "quantity": 20,
+      "category": 2
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 6,
+    "fields": {
+      "name": "Цезарь с курицей",
+      "photo": "menu_photos/caesar_salad.jpg",
+      "description": "Салат романо, куриная грудка, гренки, пармезан, соус цезарь",
+      "price": "1100.00",
+      "quantity": 15,
+      "category": 3
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 7,
+    "fields": {
+      "name": "Греческий салат",
+      "photo": "menu_photos/greek_salad.jpg",
+      "description": "Помидоры, огурцы, болгарский перец, красный лук, оливки, сыр фета, оливковое масло",
+      "price": "950.00",
+      "quantity": 20,
+      "category": 3
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 8,
+    "fields": {
+      "name": "Закуска из баклажанов",
+      "photo": "menu_photos/eggplant_appetizer.jpg",
+      "description": "Баклажаны, чеснок, грецкие орехи, специи",
+      "price": "800.00",
+      "quantity": 15,
+      "category": 4
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 9,
+    "fields": {
+      "name": "Сырная тарелка",
+      "photo": "menu_photos/cheese_plate.jpg",
+      "description": "Ассорти из сыров: пармезан, бри, дор блю, камамбер, грецкие орехи, мед, виноград",
+      "price": "1800.00",
+      "quantity": 10,
+      "category": 4
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 10,
+    "fields": {
+      "name": "Тирамису",
+      "photo": "menu_photos/tiramisu.jpg",
+      "description": "Печенье савоярди, маскарпоне, кофе, какао",
+      "price": "750.00",
+      "quantity": 20,
+      "category": 5
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 11,
+    "fields": {
+      "name": "Чизкейк",
+      "photo": "menu_photos/cheesecake.jpg",
+      "description": "Сливочный сыр, песочное печенье, сливки, ягоды",
+      "price": "700.00",
+      "quantity": 15,
+      "category": 5
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 12,
+    "fields": {
+      "name": "Латте",
+      "photo": "menu_photos/latte.jpg",
+      "description": "Эспрессо, молоко",
+      "price": "450.00",
+      "quantity": 50,
+      "category": 6
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 13,
+    "fields": {
+      "name": "Фреш апельсиновый",
+      "photo": "menu_photos/orange_juice.jpg",
+      "description": "Свежевыжатый сок из апельсинов",
+      "price": "550.00",
+      "quantity": 30,
+      "category": 6
+    }
+  },
+  {
+    "model": "menu.menuitem",
+    "pk": 14,
+    "fields": {
+      "name": "Чай зеленый",
+      "photo": "menu_photos/green_tea.jpg",
+      "description": "Китайский зеленый чай",
+      "price": "350.00",
+      "quantity": 40,
+      "category": 6
+    }
+  }
+] 
