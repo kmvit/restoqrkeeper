@@ -19,10 +19,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from django.conf.urls.i18n import i18n_patterns
 
+# URL-адреса, не зависящие от языка
 urlpatterns = [
+    path('i18n/', include('django.conf.urls.i18n')),  # URL для переключения языков
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# URL-адреса, зависящие от языка
+urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
     path('menu/', include('menu.urls', namespace='menu')),
     path('orders/', include('orders.urls')),
     path('', RedirectView.as_view(url='/menu/', permanent=True), name='home'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    prefix_default_language=True,  # Включаем префикс для языка по умолчанию
+)

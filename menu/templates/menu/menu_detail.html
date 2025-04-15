@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}{{ item.name }} - {{ SITE_NAME }}{% endblock %}
 
@@ -11,7 +12,7 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4">
     <a href="{% url 'menu:menu_list' %}" class="inline-flex items-center text-gray-600 hover:text-blue-500 transition-colors mb-6">
-        <i class="fa-solid fa-arrow-left mr-2"></i> Вернуться к меню
+        <i class="fa-solid fa-arrow-left mr-2"></i> {% trans "Вернуться к меню" %}
     </a>
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -26,9 +27,9 @@
                 <span class="text-3xl font-bold text-green-600 mr-6">{{ item.price|default:"0"|floatformat:2 }} {{ CURRENCY_SYMBOL }}</span>
                 <span class="{% if item.quantity < 5 %}text-red-500{% else %}text-gray-500{% endif %}">
                     {% if item.quantity > 0 %}
-                        В наличии: {{ item.quantity }}
+                        {% trans "В наличии" %}: {{ item.quantity }}
                     {% else %}
-                        Нет в наличии
+                        {% trans "Нет в наличии" %}
                     {% endif %}
                 </span>
             </div>
@@ -41,17 +42,17 @@
                         <button class="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-r-md increase-quantity" type="button">+</button>
                     </div>
                     <button class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300" data-item-id="{{ item.id }}">
-                        <i class="fa-solid fa-cart-plus mr-2"></i> Добавить в корзину
+                        <i class="fa-solid fa-cart-plus mr-2"></i> {% trans "Добавить в корзину" %}
                     </button>
                 </div>
             {% else %}
                 <div class="bg-yellow-100 text-yellow-700 p-4 rounded-md mb-6">
-                    К сожалению, данный товар временно недоступен.
+                    {% trans "К сожалению, данный товар временно недоступен." %}
                 </div>
             {% endif %}
             
             <div class="mt-6 border-t pt-4">
-                <h5 class="text-lg font-semibold mb-2">Категория</h5>
+                <h5 class="text-lg font-semibold mb-2">{% trans "Категория" %}</h5>
                 <p class="text-gray-600">{{ item.category.name }}</p>
             </div>
         </div>
@@ -98,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemId = this.dataset.itemId;
         const quantity = parseInt(quantityInput.value);
         
-        fetch('/orders/cart/add/', {
+        fetch('{% url "orders:add_to_cart" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -116,14 +117,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateCartCount();
                 
                 // Показываем уведомление
-                showNotification(data.message || 'Товар добавлен в корзину');
+                showNotification(data.message || '{% trans "Товар добавлен в корзину" %}');
             } else {
-                showNotification(data.message || 'Ошибка при добавлении товара', 'error');
+                showNotification(data.message || '{% trans "Ошибка при добавлении товара" %}', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Произошла ошибка при добавлении товара', 'error');
+            showNotification('{% trans "Произошла ошибка при добавлении товара" %}', 'error');
         });
     });
     

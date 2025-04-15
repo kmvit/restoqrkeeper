@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Корзина - {{ SITE_NAME }}{% endblock %}
+{% block title %}{% trans "Корзина" %} - {{ SITE_NAME }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -10,7 +11,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4">
-    <h1 class="text-3xl font-bold mb-6">Корзина</h1>
+    <h1 class="text-3xl font-bold mb-6">{% trans "Корзина" %}</h1>
     
     <div id="cart-items">
         {% if cart_items %}
@@ -37,11 +38,11 @@
             
             <div class="mt-8 p-6 bg-gray-50 rounded-lg shadow-sm">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold">Сумма заказа:</h3>
+                    <h3 class="text-xl font-bold">{% trans "Сумма заказа" %}:</h3>
                     <span class="text-2xl font-bold text-green-600" id="total-amount">{{ total_amount }} {{ CURRENCY_SYMBOL }}</span>
                 </div>
                 <a href="{% url 'orders:checkout' %}" class="block w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white text-center font-medium rounded-lg transition-colors">
-                    Оформить заказ
+                    {% trans "Оформить заказ" %}
                 </a>
             </div>
         {% else %}
@@ -49,10 +50,10 @@
                 <div class="mb-4 text-gray-400">
                     <i class="fa-solid fa-cart-xmark text-8xl"></i>
                 </div>
-                <h2 class="text-2xl font-bold mb-2">Ваша корзина пуста</h2>
-                <p class="text-gray-600 mb-6">Перейдите в меню, чтобы добавить товары</p>
+                <h2 class="text-2xl font-bold mb-2">{% trans "Ваша корзина пуста" %}</h2>
+                <p class="text-gray-600 mb-6">{% trans "Перейдите в меню, чтобы добавить товары" %}</p>
                 <a href="{% url 'menu:menu_list' %}" class="inline-block py-2 px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-                    Перейти в меню
+                    {% trans "Перейти в меню" %}
                 </a>
             </div>
         {% endif %}
@@ -97,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function updateQuantity(itemId, quantity) {
-        fetch('/orders/cart/update/', {
+        fetch('{% url "orders:update_cart_item" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -114,17 +115,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateCartDisplay();
             } else {
                 // В случае ошибки показываем сообщение
-                showNotification(data.message || 'Произошла ошибка', 'error');
+                showNotification(data.message || '{% trans "Произошла ошибка" %}', 'error');
             }
         })
         .catch(error => {
             console.error('Error updating quantity:', error);
-            showNotification('Произошла ошибка при обновлении количества', 'error');
+            showNotification('{% trans "Произошла ошибка при обновлении количества" %}', 'error');
         });
     }
     
     function removeItem(itemId) {
-        fetch('/orders/cart/remove/', {
+        fetch('{% url "orders:remove_from_cart" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -139,12 +140,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 updateCartDisplay();
             } else {
-                showNotification(data.message || 'Не удалось удалить товар', 'error');
+                showNotification(data.message || '{% trans "Не удалось удалить товар" %}', 'error');
             }
         })
         .catch(error => {
             console.error('Error removing item:', error);
-            showNotification('Произошла ошибка при удалении товара', 'error');
+            showNotification('{% trans "Произошла ошибка при удалении товара" %}', 'error');
         });
     }
     

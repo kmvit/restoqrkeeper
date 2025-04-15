@@ -1,6 +1,7 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,8 +41,35 @@
                 <a class="font-bold text-xl" href="/">{{ SITE_NAME }}</a>
                 
                 <div class="hidden md:flex space-x-4 items-center">
-                    <a class="hover:text-gray-300" href="{% url 'menu:menu_list' %}">Меню</a>
+                    <a class="hover:text-gray-300" href="{% url 'menu:menu_list' %}">{% trans "Меню" %}</a>
                     <!-- Дополнительные пункты меню при необходимости -->
+                    
+                    <!-- Переключатель языка -->
+                    <div class="relative ml-4 language-switcher">
+                        <span class="cursor-pointer flex items-center">
+                            {% get_current_language as CURRENT_LANGUAGE %}
+                            {% if CURRENT_LANGUAGE == 'ru' %}
+                                <span>🇷🇺</span> <span class="ml-1">{% trans "Русский" %}</span>
+                            {% else %}
+                                <span>🇰🇿</span> <span class="ml-1">{% trans "Қазақша" %}</span>
+                            {% endif %}
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </span>
+                        <div class="absolute hidden bg-gray-700 rounded-md py-2 w-32 z-10 right-0 top-full mt-1 language-dropdown">
+                            <form action="{% url 'set_language' %}" method="post" class="inline-block w-full">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                
+                                <button type="submit" name="language" value="ru" class="text-left w-full px-4 py-1 hover:bg-gray-600 {% if CURRENT_LANGUAGE == 'ru' %}font-bold{% endif %}">
+                                    <span>🇷🇺</span> {% trans "Русский" %}
+                                </button>
+                                
+                                <button type="submit" name="language" value="kk" class="text-left w-full px-4 py-1 hover:bg-gray-600 {% if CURRENT_LANGUAGE == 'kk' %}font-bold{% endif %}">
+                                    <span>🇰🇿</span> {% trans "Қазақша" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                     
                     <a href="{% url 'orders:cart' %}" class="ml-4 relative">
                         <i class="fa-solid fa-cart-shopping text-xl"></i>
@@ -57,10 +85,26 @@
             
             <!-- Мобильное меню (скрыто по умолчанию) -->
             <div class="md:hidden hidden pt-4 pb-2" id="mobile-menu">
-                <a class="block py-2 hover:text-gray-300" href="{% url 'menu:menu_list' %}">Меню</a>
+                <a class="block py-2 hover:text-gray-300" href="{% url 'menu:menu_list' %}">{% trans "Меню" %}</a>
+                <!-- Переключатель языка для мобильного меню -->
+                <div class="py-2">
+                    <span class="block py-2 font-bold">{% trans "Язык" %}:</span>
+                    <form action="{% url 'set_language' %}" method="post" class="flex flex-col space-y-2 pl-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        
+                        <button type="submit" name="language" value="ru" class="text-left py-1 {% if CURRENT_LANGUAGE == 'ru' %}font-bold{% endif %}">
+                            <span>🇷🇺</span> {% trans "Русский" %}
+                        </button>
+                        
+                        <button type="submit" name="language" value="kk" class="text-left py-1 {% if CURRENT_LANGUAGE == 'kk' %}font-bold{% endif %}">
+                            <span>🇰🇿</span> {% trans "Қазақша" %}
+                        </button>
+                    </form>
+                </div>
                 <!-- Дополнительные пункты -->
                 <a class="block py-2 hover:text-gray-300" href="{% url 'orders:cart' %}">
-                    Корзина <span class="cart-count bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 ml-2">0</span>
+                    {% trans "Корзина" %} <span class="cart-count bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 ml-2">0</span>
                 </a>
             </div>
         </div>
@@ -77,25 +121,25 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                     <h5 class="text-xl font-bold mb-4">{{ SITE_NAME }}</h5>
-                    <p>Лучший ресторан в городе</p>
+                    <p>{% trans "Лучший ресторан в городе" %}</p>
                 </div>
                 <div>
-                    <h5 class="text-xl font-bold mb-4">Контакты</h5>
+                    <h5 class="text-xl font-bold mb-4">{% trans "Контакты" %}</h5>
                     <ul class="space-y-2">
-                        <li><i class="fa-solid fa-location-dot mr-2"></i> Казахстан, Алматы</li>
+                        <li><i class="fa-solid fa-location-dot mr-2"></i> {% trans "Казахстан, Алматы" %}</li>
                         <li><i class="fa-solid fa-phone mr-2"></i> +7 (999) 999-99-99</li>
                         <li><i class="fa-solid fa-envelope mr-2"></i> info@{{ SITE_NAME }}</li>
                     </ul>
                 </div>
                 <div>
-                    <h5 class="text-xl font-bold mb-4">Режим работы</h5>
-                    <p>Пн-Пт: 10:00-20:00</p>
-                    <p>Сб-Вс: 10:00-18:00</p>
+                    <h5 class="text-xl font-bold mb-4">{% trans "Режим работы" %}</h5>
+                    <p>{% trans "Пн-Пт: 10:00-20:00" %}</p>
+                    <p>{% trans "Сб-Вс: 10:00-18:00" %}</p>
                 </div>
             </div>
             <hr class="my-6 border-gray-700">
             <div class="text-center">
-                <p>&copy; {{ CURRENT_YEAR }} {{ SITE_NAME }}. Все права защищены.</p>
+                <p>&copy; {{ CURRENT_YEAR }} {{ SITE_NAME }}. {% trans "Все права защищены" %}.</p>
             </div>
         </div>
     </footer>
@@ -107,14 +151,32 @@
         mobileMenu.classList.toggle('hidden');
     });
     
-    // Загружаем количество товаров в корзине при загрузке страницы
+    // Функция переключения языка
     document.addEventListener('DOMContentLoaded', function() {
+        const languageSwitcher = document.querySelector('.language-switcher span.cursor-pointer');
+        const languageDropdown = document.querySelector('.language-dropdown');
+        
+        if (languageSwitcher && languageDropdown) {
+            // Показать/скрыть меню при клике
+            languageSwitcher.addEventListener('click', function() {
+                languageDropdown.classList.toggle('hidden');
+            });
+            
+            // Скрыть меню при клике вне его
+            document.addEventListener('click', function(event) {
+                if (!languageSwitcher.contains(event.target) && !languageDropdown.contains(event.target)) {
+                    languageDropdown.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Загружаем количество товаров в корзине при загрузке страницы
         updateCartCount();
     });
     
     // Функция для обновления количества товаров в корзине
     function updateCartCount() {
-        fetch('/orders/cart/count/')
+        fetch('{% url "orders:cart_count" %}')
             .then(response => response.json())
             .then(data => {
                 const cartCountElements = document.querySelectorAll('.cart-count');

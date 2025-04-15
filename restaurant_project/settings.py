@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -130,6 +131,15 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Путь к директории с переводами
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
+
+LANGUAGES = [
+    ('ru', 'Русский'),
+    ('kk', 'Казахский'),
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -149,11 +159,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Настройки для медиафайлов
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-LANGUAGES = [
-    ('ru', 'Русский'),
-    ('kk', 'Казахский'),
-]
 
 # Настройки для ForteBank
 FORTEBANK_API_URL = os.environ.get('FORTEBANK_API_URL', 'https://api.fortebank.kz')

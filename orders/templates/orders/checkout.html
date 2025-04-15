@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Оформление заказа - {{ SITE_NAME }}{% endblock %}
+{% block title %}{% trans "Оформление заказа" %} - {{ SITE_NAME }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -11,21 +12,21 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4">
     <div class="border-b border-gray-200 pb-4 mb-8">
-        <h1 class="text-3xl font-bold mb-2">Оформление заказа</h1>
-        <p class="text-gray-600">Пожалуйста, проверьте информацию о вашем заказе перед подтверждением.</p>
+        <h1 class="text-3xl font-bold mb-2">{% trans "Оформление заказа" %}</h1>
+        <p class="text-gray-600">{% trans "Пожалуйста, проверьте информацию о вашем заказе перед подтверждением." %}</p>
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="md:col-span-2">
             <div class="bg-gray-50 rounded-lg p-6 mb-6">
-                <h2 class="text-xl font-bold mb-4">Товары в корзине</h2>
+                <h2 class="text-xl font-bold mb-4">{% trans "Товары в корзине" %}</h2>
                 
                 {% for item in items %}
                 <div class="flex items-center py-4 {% if not forloop.last %}border-b border-gray-200{% endif %}">
                     <img src="{{ item.photo_url }}" alt="{{ item.name }}" class="w-16 h-16 object-cover rounded-lg mr-4">
                     <div class="flex-grow">
                         <h5 class="font-semibold">{{ item.name }}</h5>
-                        <div class="text-gray-600">Количество: {{ item.quantity }} × {{ item.price }} {{ CURRENCY_SYMBOL }}</div>
+                        <div class="text-gray-600">{% trans "Количество" %}: {{ item.quantity }} × {{ item.price }} {{ CURRENCY_SYMBOL }}</div>
                     </div>
                     <div class="font-bold">
                         {{ item.total }} {{ CURRENCY_SYMBOL }}
@@ -37,33 +38,33 @@
         
         <div class="md:col-span-1">
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-bold mb-4">Итого по заказу</h3>
+                <h3 class="text-xl font-bold mb-4">{% trans "Итого по заказу" %}</h3>
                 
                 <div class="flex justify-between py-2">
-                    <div>Количество товаров:</div>
+                    <div>{% trans "Количество товаров" %}:</div>
                     <div>{{ items|length }}</div>
                 </div>
                 
                 <div class="flex justify-between py-2">
-                    <div>Подытог:</div>
+                    <div>{% trans "Подытог" %}:</div>
                     <div>{{ total_amount }} {{ CURRENCY_SYMBOL }}</div>
                 </div>
                 
                 <div class="flex justify-between py-4 font-bold text-lg border-t border-gray-200 mt-2">
-                    <div>Итого:</div>
+                    <div>{% trans "Итого" %}:</div>
                     <div>{{ total_amount }} {{ CURRENCY_SYMBOL }}</div>
                 </div>
                 
                 <form method="post" action="{% url 'orders:create_order' %}">
                     {% csrf_token %}
                     <button type="submit" class="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white text-center font-medium rounded-lg transition-colors mt-4">
-                        Подтвердить заказ
+                        {% trans "Подтвердить заказ" %}
                     </button>
                 </form>
                 
                 <div class="mt-4">
                     <a href="{% url 'orders:cart' %}" class="block w-full py-2 px-4 border border-gray-300 text-gray-700 text-center rounded-lg hover:bg-gray-100 transition-colors">
-                        Вернуться в корзину
+                        {% trans "Вернуться в корзину" %}
                     </a>
                 </div>
             </div>
