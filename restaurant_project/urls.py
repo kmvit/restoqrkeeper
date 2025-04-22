@@ -34,3 +34,10 @@ urlpatterns += i18n_patterns(
     path('', RedirectView.as_view(url='/menu/', permanent=True), name='home'),
     prefix_default_language=True,  # Включаем префикс для языка по умолчанию
 )
+
+# Добавляем обслуживание статических файлов в режиме DEBUG
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+    # Если вы настроили MEDIA_URL/MEDIA_ROOT и хотите обслуживать медиафайлы локально:
+    # urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Закомментировал строку выше, т.к. обслуживание MEDIA уже добавлено ранее, но это стандартное место

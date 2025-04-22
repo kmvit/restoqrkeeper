@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
-
+{% load static %}
 {% block title %}{% trans "Оформление заказа" %} - {{ SITE_NAME }}{% endblock %}
 
 {% block extra_css %}
@@ -23,7 +23,11 @@
                 
                 {% for item in items %}
                 <div class="flex items-center py-4 {% if not forloop.last %}border-b border-gray-200{% endif %}">
+                    {% if item.photo_url %}
                     <img src="{{ item.photo_url }}" alt="{{ item.name }}" class="w-16 h-16 object-cover rounded-lg mr-4">
+                    {% else %}
+                    <img src="{% static 'images/default.jpg' %}" alt="{{ item.name }}" class="w-16 h-16 object-cover rounded-lg mr-4">
+                    {% endif %}
                     <div class="flex-grow">
                         <h5 class="font-semibold">{{ item.name }}</h5>
                         <div class="text-gray-600">{% trans "Количество" %}: {{ item.quantity }} × {{ item.price }} {{ CURRENCY_SYMBOL }}</div>

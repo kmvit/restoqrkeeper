@@ -11,7 +11,6 @@ import json
 from .models import Order, OrderItem
 from menu.models import MenuItem
 from .services.forte_payment import ForteBankPaymentService
-from .services.rkeeper_integration import RKeeperIntegrationService
 from core.utils import format_price, calculate_order_total, validate_table_number
 
 class CartView(View):
@@ -323,34 +322,41 @@ class OrderDetailView(DetailView):
 @method_decorator(csrf_exempt, name='dispatch')
 class PaymentCallbackView(View):
     def post(self, request, *args, **kwargs):
-        payment_id = request.POST.get('payment_id')
-        status = request.POST.get('status')
-        
         try:
+            data = json.loads(request.body)
+            payment_id = data.get('payment_id')
+            status = data.get('status')
+            
+            if not payment_id or not status:
+                return JsonResponse({'error': 'Missing payment_id or status'}, status=400)
+            
             order = Order.objects.get(payment_id=payment_id)
             
             if status == 'success':
                 order.status = 'paid'
                 order.save()
                 
-                # Отправляем заказ в R-Keeper
-                rkeeper_service = RKeeperIntegrationService()
-                try:
-                    rkeeper_order_id = rkeeper_service.send_order(order)
-                    order.rkeeper_order_id = rkeeper_order_id
-                    order.save()
-                except Exception as e:
-                    # Логируем ошибку, но не прерываем выполнение
-                    print(f'Ошибка при отправке заказа в R-Keeper: {str(e)}')
-                    
+                # Отправка заказа в R-Keeper временно отключена
+                # rkeeper_service = RKeeperService()
+                # try:
+                #     rkeeper_order_id = rkeeper_service.send_order(order)
+                #     order.rkeeper_order_id = rkeeper_order_id
+                #     order.save()
+                # except Exception as e:
+                #     logger.error(f"Ошибка при отправке заказа в R-Keeper: {e}")
+                
                 return JsonResponse({'status': 'success'})
             else:
-                order.status = 'cancelled'
+                order.status = 'failed'
                 order.save()
-                return JsonResponse({'status': 'error', 'message': 'Платеж не выполнен'})
+                return JsonResponse({'status': 'failed'})
                 
         except Order.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Заказ не найден'}, status=404)
+            return JsonResponse({'error': 'Order not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
 class OrderSuccessView(DetailView):
     model = Order

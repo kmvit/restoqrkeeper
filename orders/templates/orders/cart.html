@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
-
+{% load static %}
 {% block title %}{% trans "Корзина" %} - {{ SITE_NAME }}{% endblock %}
 
 {% block extra_css %}
@@ -17,7 +17,11 @@
         {% if cart_items %}
             {% for item in cart_items %}
             <div class="flex items-center py-4 border-b border-gray-200 cart-item" data-item-id="{{ item.id }}">
+                {% if item.photo_url %}
                 <img src="{{ item.photo_url }}" alt="{{ item.name }}" class="w-24 h-24 object-cover rounded-lg mr-4">
+                {% else %}
+                <img src="{% static 'images/default.jpg' %}" alt="{{ item.name }}" class="w-24 h-24 object-cover rounded-lg mr-4">
+                {% endif %}
                 <div class="flex-grow">
                     <div class="text-xl font-semibold mb-1">{{ item.name }}</div>
                     <div class="text-gray-600 mb-2">{{ item.price }} {{ CURRENCY_SYMBOL }}</div>
