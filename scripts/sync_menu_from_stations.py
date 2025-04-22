@@ -10,6 +10,8 @@ import django
 import sys
 import logging
 from datetime import datetime
+from django.utils import timezone
+from django.db import transaction
 
 # Настройка логирования
 logging.basicConfig(
@@ -29,8 +31,6 @@ django.setup()
 
 # Импорт моделей после настройки Django
 from menu.models import Station, Category, MenuItem
-from django.utils import timezone
-from django.db import transaction
 
 # Отключаем предупреждения SSL
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
@@ -51,8 +51,8 @@ adapter = CustomAdapter(max_retries=retry)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
 
-# Конфигурация
-base_url = "https://picasso:01020304@109.248.156.50:12686/rk7api/v0/xmlinterface.xml"
+# Конфигурация из переменных окружения
+base_url = os.environ.get('RKEEPER_API_URL', 'https://example.com/rk7api/v0/xmlinterface.xml')
 
 def get_dish_names():
     """Получает справочник названий блюд"""

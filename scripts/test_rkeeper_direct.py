@@ -26,8 +26,8 @@ adapter = CustomAdapter(max_retries=retry)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
 
-# Конфигурация
-base_url = "https://picasso:01020304@109.248.156.50:12686/rk7api/v0/xmlinterface.xml"
+# Конфигурация из переменных окружения
+base_url = os.environ.get('RKEEPER_API_URL', 'https://example.com/rk7api/v0/xmlinterface.xml')
 stations = [
     {"name": "Кафе2", "code": 2},
     {"name": "Жираф", "code": 3},
