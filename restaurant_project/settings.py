@@ -169,6 +169,17 @@ FORTEBANK_SECRET_KEY = os.environ.get('FORTEBANK_SECRET_KEY', 'your_secret_key')
 RKEEPER_API_URL = os.environ.get('RKEEPER_API_URL', 'http://your-rkeeper-server/api')
 RKEEPER_USERNAME = os.environ.get('RKEEPER_USERNAME', 'your_username')
 RKEEPER_PASSWORD = os.environ.get('RKEEPER_PASSWORD', 'your_password')
+RKEEPER_LICENSE_ANCHOR = os.environ.get('RKEEPER_LICENSE_ANCHOR', '')  # Формат: 6:<ProductGUID>#<restCode>/17
+RKEEPER_LICENSE_TOKEN = os.environ.get('RKEEPER_LICENSE_TOKEN', '')  # ID лицензии
+RKEEPER_LICENSE_INSTANCE_GUID = os.environ.get('RKEEPER_LICENSE_INSTANCE_GUID', '')  # Уникальный GUID экземпляра приложения
+
+# Кэш для хранения seqNumber лицензии R-Keeper
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rkeeper_seq_cache',
+    }
+}
 
 # Настройки сайта
 SITE_NAME = os.environ.get('SITE_NAME', 'Ресторан')

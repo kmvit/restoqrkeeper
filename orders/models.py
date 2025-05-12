@@ -13,8 +13,10 @@ class Order(models.Model):
     ]
 
     table_number = models.IntegerField('Номер стола', null=True, blank=True)
+    station_id = models.CharField('ID станции в R-Keeper', max_length=50, null=True, blank=True)
     total_amount = models.DecimalField('Общая сумма', max_digits=10, decimal_places=2)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='new')
+    rkeeper_license_seq = models.IntegerField('SeqNumber лицензирования', default=0)
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлен', auto_now=True)
     payment_id = models.CharField('ID платежа', max_length=100, blank=True, null=True)

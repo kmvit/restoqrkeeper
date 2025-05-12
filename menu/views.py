@@ -12,7 +12,7 @@ def menu_list(request):
     """
     # Получаем параметры из GET-запроса или сессии
     station_code = request.GET.get('station_id')
-    table_number = request.GET.get('table') or request.session.get('table_number')
+    table_number = request.GET.get('table')
     
     # Инициализируем контекст
     context = {

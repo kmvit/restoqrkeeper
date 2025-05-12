@@ -43,7 +43,12 @@
         <div class="md:col-span-1">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h3 class="text-xl font-bold mb-4">{% trans "Итого по заказу" %}</h3>
-                
+
+                <div class="flex justify-between py-2">
+                    <div>{% trans "Номер стола" %}:</div>
+                    <div>{{ table_number }}</div>
+                </div>
+
                 <div class="flex justify-between py-2">
                     <div>{% trans "Количество товаров" %}:</div>
                     <div>{{ items|length }}</div>

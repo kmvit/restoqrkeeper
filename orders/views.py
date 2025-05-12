@@ -7,11 +7,16 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from decimal import Decimal
 import json
+import logging
+from django.urls import reverse
 
 from .models import Order, OrderItem
 from menu.models import MenuItem
 from .services.forte_payment import ForteBankPaymentService
+from .services.rkeeper_service import RKeeperService
 from core.utils import format_price, calculate_order_total, validate_table_number
+
+logger = logging.getLogger(__name__)
 
 class CartView(View):
     template_name = 'orders/cart.html'
@@ -286,8 +291,12 @@ def create_order(request):
         messages.error(request, 'Нет доступных товаров')
         return redirect('orders:cart')
     
+    
+    
     # Создаем заказ в базе данных
     order = Order.objects.create(
+        table_number=request.session.get('table_number'),
+        station_id=request.session.get('station_code'),  # Сохраняем ID станции
         total_amount=total_amount,
         status='new'  # Устанавливаем статус 'new' вместо ожидания оплаты
     )
@@ -302,11 +311,28 @@ def create_order(request):
             total=item['total']
         )
     
+    # Отправляем заказ в R-Keeper
+    try:
+        rkeeper_service = RKeeperService()
+        rkeeper_order_id = rkeeper_service.send_order(order)
+        if rkeeper_order_id:
+            order.rkeeper_order_id = rkeeper_order_id
+            order.status = 'processing'
+            order.save()
+            logger.info(f"Заказ #{order.id} успешно отправлен в R-Keeper")
+        else:
+            logger.error(f"Не удалось отправить заказ #{order.id} в R-Keeper")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке заказа в R-Keeper: {e}")
+    
     # Очищаем корзину
     request.session['cart'] = {}
     
-    # Перенаправляем на страницу успешного оформления заказа
-    return redirect('orders:order_success', pk=order.pk)
+    # Перенаправляем на страницу успешного оформления заказа с параметрами станции и стола
+    station = order.station_id or request.session.get('station_code')
+    table = order.table_number or request.session.get('table_number')
+    success_url = reverse('orders:order_success', kwargs={'pk': order.pk}) + f'?station_id={station}&table={table}'
+    return redirect(success_url)
 
 class OrderDetailView(DetailView):
     model = Order
@@ -336,14 +362,19 @@ class PaymentCallbackView(View):
                 order.status = 'paid'
                 order.save()
                 
-                # Отправка заказа в R-Keeper временно отключена
-                # rkeeper_service = RKeeperService()
-                # try:
-                #     rkeeper_order_id = rkeeper_service.send_order(order)
-                #     order.rkeeper_order_id = rkeeper_order_id
-                #     order.save()
-                # except Exception as e:
-                #     logger.error(f"Ошибка при отправке заказа в R-Keeper: {e}")
+                # Отправка заказа в R-Keeper
+                rkeeper_service = RKeeperService()
+                try:
+                    rkeeper_order_id = rkeeper_service.send_order(order)
+                    if rkeeper_order_id:
+                        order.rkeeper_order_id = rkeeper_order_id
+                        order.status = 'processing'
+                        order.save()
+                        logger.info(f"Заказ #{order.id} успешно отправлен в R-Keeper")
+                    else:
+                        logger.error(f"Не удалось отправить заказ #{order.id} в R-Keeper")
+                except Exception as e:
+                    logger.error(f"Ошибка при отправке заказа в R-Keeper: {e}")
                 
                 return JsonResponse({'status': 'success'})
             else:
