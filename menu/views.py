@@ -1,18 +1,22 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
+from django.utils.translation import get_language
 from .models import MenuItem, Category, Station
 
-def menu_list(request):
+def menu_list(request, station_id=None, table=None):
     """
     Отображение меню или списка станций
     
     Параметры:
-    - station_code: код станции (опционально, можно передать через GET или сессию)
-    - table_number: номер стола (опционально, можно передать через GET или сессию)
+    - station_id: код станции (из URL или GET-параметра)
+    - table: номер стола (из URL или GET-параметра)
     """
-    # Получаем параметры из GET-запроса или сессии
-    station_code = request.GET.get('station_id')
-    table_number = request.GET.get('table')
+    # Получаем параметры из URL, GET-запроса или сессии
+    station_code = station_id or request.GET.get('station_id') or request.session.get('station_code')
+    table_number = table or request.GET.get('table') or request.session.get('table_number')
+    
+    # Получаем текущий язык
+    current_language = get_language()
     
     # Инициализируем контекст
     context = {
@@ -26,13 +30,23 @@ def menu_list(request):
     # Если указан код станции, показываем меню этой станции
     if station_code:
         station = get_object_or_404(Station, rkeeper_id=station_code, is_active=True)
+        items = MenuItem.objects.filter(
+            station=station,
+            is_available=True
+        ).select_related('category').order_by('category__name', 'name')
+        
+        # Если язык казахский, заменяем названия и описания на казахские
+        if current_language == 'kk':
+            for item in items:
+                if item.name_kk:
+                    item.name = item.name_kk
+                if item.description_kk:
+                    item.description = item.description_kk
+        
         context.update({
             'station': station,
             'categories': Category.objects.filter(station=station),
-            'items': MenuItem.objects.filter(
-                station=station,
-                is_available=True
-            ).select_related('category').order_by('category__name', 'name')
+            'items': items
         })
         
         # Сохраняем параметры в сессии
@@ -63,6 +77,16 @@ def menu_detail(request, item_id):
             raise Http404("Item not found in this station")
     else:
         station = item.station
+    
+    # Получаем текущий язык
+    current_language = get_language()
+    
+    # Если язык казахский и есть перевод, используем его
+    if current_language == 'kk':
+        if item.name_kk:
+            item.name = item.name_kk
+        if item.description_kk:
+            item.description = item.description_kk
     
     context = {
         'item': item,

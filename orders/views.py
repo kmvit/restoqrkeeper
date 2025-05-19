@@ -291,24 +291,28 @@ def create_order(request):
         messages.error(request, 'Нет доступных товаров')
         return redirect('orders:cart')
     
-    
+    comment = request.POST.get('comment', '')
     
     # Создаем заказ в базе данных
     order = Order.objects.create(
         table_number=request.session.get('table_number'),
         station_id=request.session.get('station_code'),  # Сохраняем ID станции
         total_amount=total_amount,
-        status='new'  # Устанавливаем статус 'new' вместо ожидания оплаты
+        status='new',  # Устанавливаем статус 'new' вместо ожидания оплаты
+        comment=comment
     )
     
     # Создаем позиции заказа
     for item in items:
+        comment = request.POST.get(f'comment_{item["menu_item"].id}', '')
+        
         OrderItem.objects.create(
             order=order,
             menu_item=item['menu_item'],
             quantity=item['quantity'],
             price=item['price'],
-            total=item['total']
+            total=item['total'],
+            comment=comment
         )
     
     # Отправляем заказ в R-Keeper

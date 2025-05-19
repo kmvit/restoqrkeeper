@@ -34,8 +34,10 @@ class Category(models.Model):
 class MenuItem(models.Model):
     """Товар"""
     name = models.CharField(max_length=200, verbose_name='Название блюда')
+    name_kk = models.CharField(max_length=200, verbose_name='Название блюда (казахский)', null=True, blank=True)
     photo = models.ImageField(upload_to='menu_photos/', verbose_name='Фото', null=True, blank=True)
     description = models.TextField(verbose_name='Состав', null=True, blank=True)
+    description_kk = models.TextField(verbose_name='Состав (казахский)', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='Цена', default=0)
     quantity = models.PositiveIntegerField(verbose_name='Количество', default=0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='Категория')

@@ -38,7 +38,7 @@
     <nav class="bg-gray-800 text-white">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
-                <a class="font-bold text-xl" href="/">{{ SITE_NAME }}</a>
+                <a class="font-bold text-xl" href="{% url 'menu:menu_list' %}">{{ SITE_NAME }}</a>
                 
                 <div class="hidden md:flex space-x-4 items-center">
                     <a class="hover:text-gray-300" href="{% url 'menu:menu_list' %}">{% trans "Меню" %}</a>
@@ -56,18 +56,11 @@
                             <i class="fas fa-chevron-down ml-1 text-xs"></i>
                         </span>
                         <div class="absolute hidden bg-gray-700 rounded-md py-2 w-32 z-10 right-0 top-full mt-1 language-dropdown">
-                            <form action="{% url 'set_language' %}" method="post" class="inline-block w-full">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.path }}">
-                                
-                                <button type="submit" name="language" value="ru" class="text-left w-full px-4 py-1 hover:bg-gray-600 {% if CURRENT_LANGUAGE == 'ru' %}font-bold{% endif %}">
-                                    <span>🇷🇺</span> {% trans "Русский" %}
-                                </button>
-                                
-                                <button type="submit" name="language" value="kk" class="text-left w-full px-4 py-1 hover:bg-gray-600 {% if CURRENT_LANGUAGE == 'kk' %}font-bold{% endif %}">
-                                    <span>🇰🇿</span> {% trans "Қазақша" %}
-                                </button>
-                            </form>
+                            <a href="/ru{{ request.path|slice:"3:" }}" class="block text-left w-full px-4 py-1 hover:bg-gray-600 {% if CURRENT_LANGUAGE == 'ru' %}font-bold{% endif %}">
+                                <span>🇷🇺</span> {% trans "Русский" %}
+                            </a>
+                            <a href="/kk{{ request.path|slice:"3:" }}" class="block text-left w-full px-4 py-1 hover:bg-gray-600 {% if CURRENT_LANGUAGE == 'kk' %}font-bold{% endif %}">
+                                <span>🇰🇿</span> {% trans "Қазақша" %}</a>
                         </div>
                     </div>
                     
@@ -89,18 +82,14 @@
                 <!-- Переключатель языка для мобильного меню -->
                 <div class="py-2">
                     <span class="block py-2 font-bold">{% trans "Язык" %}:</span>
-                    <form action="{% url 'set_language' %}" method="post" class="flex flex-col space-y-2 pl-4">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ request.path }}">
-                        
-                        <button type="submit" name="language" value="ru" class="text-left py-1 {% if CURRENT_LANGUAGE == 'ru' %}font-bold{% endif %}">
+                    <div class="flex flex-col space-y-2 pl-4">
+                        <a href="/ru{{ request.path|slice:"3:" }}" class="text-left py-1 {% if CURRENT_LANGUAGE == 'ru' %}font-bold{% endif %}">
                             <span>🇷🇺</span> {% trans "Русский" %}
-                        </button>
-                        
-                        <button type="submit" name="language" value="kk" class="text-left py-1 {% if CURRENT_LANGUAGE == 'kk' %}font-bold{% endif %}">
+                        </a>
+                        <a href="/kk{{ request.path|slice:"3:" }}" class="text-left py-1 {% if CURRENT_LANGUAGE == 'kk' %}font-bold{% endif %}">
                             <span>🇰🇿</span> {% trans "Қазақша" %}
-                        </button>
-                    </form>
+                        </a>
+                    </div>
                 </div>
                 <!-- Дополнительные пункты -->
                 <a class="block py-2 hover:text-gray-300" href="{% url 'orders:cart' %}">

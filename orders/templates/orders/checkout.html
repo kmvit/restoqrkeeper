@@ -36,6 +36,9 @@
                         {{ item.total }} {{ CURRENCY_SYMBOL }}
                     </div>
                 </div>
+                <div>
+                    <textarea name="comment_{{ item.id }}" class="w-full mt-2 p-2 border border-gray-300 rounded-md" placeholder="{% trans 'Комментарий к блюду' %}"></textarea>
+                </div>
                 {% endfor %}
             </div>
         </div>

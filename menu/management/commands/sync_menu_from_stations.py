@@ -202,7 +202,8 @@ def sync_station_menu(station, dish_names):
                     'quantity': quantity,
                     'category': categories[category_name],
                     'is_available': True,
-                    'last_updated': timezone.now()
+                    'last_updated': timezone.now(),
+                    'comment': dish_info.get('comment', '')
                 }
             )
             if created:
