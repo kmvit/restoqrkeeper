@@ -43,6 +43,9 @@
                 <div class="hidden md:flex space-x-4 items-center">
                     <a class="hover:text-gray-300" href="{% url 'menu:menu_list' %}">{% trans "Меню" %}</a>
                     <!-- Дополнительные пункты меню при необходимости -->
+                    {% for page in menu_pages %}
+                        <a class="hover:text-gray-300" href="{{ page.get_absolute_url }}">{{ page.title }}</a>
+                    {% endfor %}
                     
                     <!-- Переключатель языка -->
                     <div class="relative ml-4 language-switcher">
@@ -79,6 +82,9 @@
             <!-- Мобильное меню (скрыто по умолчанию) -->
             <div class="md:hidden hidden pt-4 pb-2" id="mobile-menu">
                 <a class="block py-2 hover:text-gray-300" href="{% url 'menu:menu_list' %}">{% trans "Меню" %}</a>
+                {% for page in menu_pages %}
+                    <a class="block py-2 hover:text-gray-300" href="{{ page.get_absolute_url }}">{{ page.title }}</a>
+                {% endfor %}
                 <!-- Переключатель языка для мобильного меню -->
                 <div class="py-2">
                     <span class="block py-2 font-bold">{% trans "Язык" %}:</span>

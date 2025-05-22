@@ -76,6 +76,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.table_number',
                 'core.context_processors.site_settings',
+                'core.context_processors.menu_pages',
             ],
         },
     },

@@ -31,6 +31,7 @@ urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
     path('menu/', include('menu.urls', namespace='menu')),
     path('orders/', include('orders.urls')),
+    path('', include('core.urls', namespace='core')),  # Добавляем URL-адреса core
     path('', RedirectView.as_view(url='/menu/', permanent=True), name='home'),
     prefix_default_language=True,  # Включаем префикс для языка по умолчанию
 )
