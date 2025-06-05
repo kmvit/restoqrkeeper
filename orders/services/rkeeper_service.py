@@ -130,14 +130,21 @@ class RKeeperService:
         """
         table_number = order.table_number or 1  # Значение по умолчанию, если номер стола не указан
         
-        # Создаем заказ с указанием номера стола в комментарии
+        # Формируем комментарий с информацией о столе и официанте
+        comment_parts = [f"Web Order - Стол: {table_number}"]
+        if order.waiter:
+            comment_parts.append(f"Официант: {order.waiter.name} (код: {order.waiter.code})")
+        persistent_comment = " | ".join(comment_parts)
+        
+        # Создаем заказ с указанием номера стола и официанта
         xml_query = f'''<?xml version="1.0" encoding="utf-8"?>
         <RK7Query>
          <RK7CMD CMD="CreateOrder">
-          <Order persistentComment="Web Order - Стол: {table_number}">
+          <Order persistentComment="{persistent_comment}">
            <Table code="{table_number}"/>
            <Station code="{station_code}"/>
            <GuestType id="1"/>
+           {f'<Waiter code="{order.waiter.code}"/>' if order.waiter else ''}
           </Order>
          </RK7CMD>
         </RK7Query>
@@ -219,7 +226,18 @@ class RKeeperService:
                 # Количество для R-Keeper умножается на 1000
                 quantity = int(item.quantity * 1000)
                 
-                dish_elements.append(f'<Dish id="{rkeeper_id}" quantity="{quantity}"/>')
+                # Подготавливаем комментарий к позиции
+                comment = item.comment or ''
+                # Экранируем специальные символы в комментарии
+                comment = comment.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+                
+                # Добавляем позицию с комментарием, если он есть
+                if comment:
+                    dish_elements.append(f'<Dish id="{rkeeper_id}" quantity="{quantity}" comment="{comment}"/>')
+                else:
+                    dish_elements.append(f'<Dish id="{rkeeper_id}" quantity="{quantity}"/>')
+                
+                logger.debug(f"Подготовлена позиция заказа: {item.menu_item.name}, количество: {quantity}, комментарий: {comment}")
             except Exception as e:
                 logger.error(f"Ошибка при подготовке позиции заказа: {str(e)}")
         

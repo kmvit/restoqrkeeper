@@ -10,7 +10,7 @@ import json
 import logging
 from django.urls import reverse
 
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Waiter
 from menu.models import MenuItem
 from .services.forte_payment import ForteBankPaymentService
 from .services.rkeeper_service import RKeeperService
@@ -292,13 +292,23 @@ def create_order(request):
         return redirect('orders:cart')
     
     comment = request.POST.get('comment', '')
+    table_number = request.session.get('table_number')
+    
+    # Ищем официанта по номеру стола
+    waiter = None
+    if table_number:
+        try:
+            waiter = Waiter.objects.get(table_number=table_number, is_active=True)
+        except Waiter.DoesNotExist:
+            logger.warning(f"Не найден активный официант для стола {table_number}")
     
     # Создаем заказ в базе данных
     order = Order.objects.create(
-        table_number=request.session.get('table_number'),
-        station_id=request.session.get('station_code'),  # Сохраняем ID станции
+        table_number=table_number,
+        station_id=request.session.get('station_code'),
+        waiter=waiter,  # Привязываем официанта к заказу
         total_amount=total_amount,
-        status='new',  # Устанавливаем статус 'new' вместо ожидания оплаты
+        status='new',
         comment=comment
     )
     

@@ -28,6 +28,20 @@
 <div class="w-full">
     <h1 class="text-3xl font-bold text-center mb-6">{% trans "Меню ресторана" %} {{ SITE_NAME }}</h1>
     
+    <!-- Строка поиска -->
+    <div class="max-w-2xl mx-auto mb-8">
+        <div class="relative">
+            <input type="text" 
+                   id="searchInput" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="{% trans 'Поиск блюд...' %}"
+                   autocomplete="off">
+            <div class="absolute right-3 top-2.5 text-gray-400">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+    </div>
+    
     <!-- Навигация по категориям -->
     <div class="overflow-x-auto whitespace-nowrap pb-4 mb-8 scrollbar-thin">
         <div class="inline-flex space-x-2">
@@ -41,7 +55,7 @@
     <!-- Сетка элементов меню -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {% for item in items %}
-            <div class="menu-item visible" data-category="category-{{ item.category.id }}">
+            <div class="menu-item visible" data-category="category-{{ item.category.id }}" data-name="{{ item.name|lower }}" data-description="{{ item.comment|lower }}">
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 h-full flex flex-col cursor-pointer" onclick="openModal('imageModal{{ item.id }}', event)">
                     <div class="relative">
                         <img src="{% if item.photo %}{{ item.photo.url }}{% else %}{% static 'images/default.jpg' %}{% endif %}" 
@@ -55,7 +69,6 @@
                         
                         <div class="flex justify-between items-center mb-3">
                             <span class="text-lg font-bold text-green-600">{{ item.price|default:"0"|floatformat:0 }} {{ CURRENCY_SYMBOL }}</span>
-                            
                         </div>
                         
                         <button class="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -68,7 +81,7 @@
                 </div>
             </div>
             
-            <!-- Модальное окно для увеличения изображения (скрыто по умолчанию) -->
+            <!-- Модальное окно для увеличения изображения -->
             <div id="imageModal{{ item.id }}" class="hidden fixed inset-0 z-50 overflow-auto bg-black bg-opacity-75 flex items-center justify-center p-4">
                 <div class="bg-white rounded-lg max-w-4xl w-full mx-auto">
                     <div class="flex justify-between items-center p-4 border-b">
@@ -254,6 +267,48 @@ document.addEventListener('DOMContentLoaded', function() {
         
         notif.style.transition = 'opacity 0.3s';
     }
+
+    // Функционал поиска
+    const searchInput = document.getElementById('searchInput');
+    const menuItems = document.querySelectorAll('.menu-item');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        menuItems.forEach(item => {
+            const name = item.dataset.name;
+            const description = item.dataset.description;
+            
+            if (searchTerm === '' || 
+                name.includes(searchTerm) || 
+                description.includes(searchTerm)) {
+                item.classList.remove('hidden');
+                item.classList.add('visible');
+            } else {
+                item.classList.remove('visible');
+                item.classList.add('hidden');
+            }
+        });
+        
+        // Если есть активная категория, применяем её фильтр
+        const activeCategory = document.querySelector('[data-category].active');
+        if (activeCategory && activeCategory.dataset.category !== 'all') {
+            const category = activeCategory.dataset.category;
+            menuItems.forEach(item => {
+                if (item.dataset.category !== category) {
+                    item.classList.remove('visible');
+                    item.classList.add('hidden');
+                }
+            });
+        }
+    });
+    
+    // Очистка поиска при переключении категорий
+    categoryLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            searchInput.value = '';
+        });
+    });
 });
 </script>
 {% endblock %} 

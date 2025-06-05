@@ -2,7 +2,31 @@ from django.db import models
 from django.conf import settings
 from menu.models import MenuItem
 
+class Waiter(models.Model):
+    """
+    Модель для хранения информации об официантах
+    """
+    code = models.CharField('Код официанта', max_length=50, unique=True)
+    name = models.CharField('Имя официанта', max_length=100)
+    guid = models.CharField('GUID в R-Keeper', max_length=100, blank=True, null=True)
+    table_number = models.IntegerField('Номер стола', null=True, blank=True)
+    is_active = models.BooleanField('Активен', default=True)
+    created_at = models.DateTimeField('Создан', auto_now_add=True)
+    updated_at = models.DateTimeField('Обновлен', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Официант'
+        verbose_name_plural = 'Официанты'
+        ordering = ['name']
+
+    def __str__(self):
+        table_info = f' - Стол {self.table_number}' if self.table_number else ''
+        return f'{self.name} ({self.code}){table_info}'
+
 class Order(models.Model):
+    """
+    Модель для хранения информации о заказах
+    """
     STATUS_CHOICES = [
         ('new', 'Новый'),
         ('pending', 'Ожидает оплаты'),
@@ -14,6 +38,7 @@ class Order(models.Model):
 
     table_number = models.IntegerField('Номер стола', null=True, blank=True)
     station_id = models.CharField('ID станции в R-Keeper', max_length=50, null=True, blank=True)
+    waiter = models.ForeignKey(Waiter, on_delete=models.PROTECT, verbose_name='Официант', null=True, blank=True)
     total_amount = models.DecimalField('Общая сумма', max_digits=10, decimal_places=2)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='new')
     rkeeper_license_seq = models.IntegerField('SeqNumber лицензирования', default=0)
@@ -32,6 +57,9 @@ class Order(models.Model):
         return f'Заказ #{self.id} - Стол {self.table_number}'
 
 class OrderItem(models.Model):
+    """
+    Модель для хранения информации о позициях заказа
+    """
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name='Заказ')
     menu_item = models.ForeignKey(MenuItem, on_delete=models.PROTECT, verbose_name='Позиция меню')
     quantity = models.PositiveIntegerField('Количество')

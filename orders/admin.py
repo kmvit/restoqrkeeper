@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Waiter
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
@@ -39,3 +39,23 @@ class OrderItemAdmin(admin.ModelAdmin):
         if obj:  # Редактирование существующего объекта
             return self.readonly_fields + ('price',)
         return self.readonly_fields
+
+@admin.register(Waiter)
+class WaiterAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'table_number', 'guid', 'is_active', 'created_at')
+    list_filter = ('is_active', 'table_number')
+    search_fields = ('name', 'code', 'guid', 'table_number')
+    ordering = ('name',)
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'code', 'guid', 'table_number')
+        }),
+        ('Статус', {
+            'fields': ('is_active',)
+        }),
+        ('Временные метки', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    readonly_fields = ('created_at', 'updated_at')
