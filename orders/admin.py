@@ -9,14 +9,14 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
-    list_display = ('number', 'station_id', 'waiter', 'is_active')
+    list_display = ('name','number', 'station_id', 'waiter', 'is_active')
     list_filter = ('is_active', 'station_id')
     search_fields = ('number', 'station_id', 'waiter__name')
     ordering = ('number',)
     autocomplete_fields = ['waiter']
     fieldsets = (
         ('Основная информация', {
-            'fields': ('number', 'station_id', 'waiter')
+            'fields': ('number', 'name', 'station_id', 'waiter')
         }),
         ('Статус', {
             'fields': ('is_active',)

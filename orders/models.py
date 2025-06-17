@@ -25,6 +25,7 @@ class Table(models.Model):
     """
     Модель для хранения информации о столах
     """
+    name = models.CharField('Название стола', max_length=100, null=True, blank=True)
     number = models.IntegerField('Номер стола', unique=True)
     station_id = models.CharField('ID станции в R-Keeper', max_length=50)
     waiter = models.ForeignKey(Waiter, on_delete=models.SET_NULL, verbose_name='Официант', null=True, blank=True)
