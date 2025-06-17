@@ -35,7 +35,7 @@
 </head>
 <body class="bg-gray-100 font-sans">
     <!-- Навигационная панель -->
-    <nav class="bg-gray-800 text-white">
+    <nav class="bg-gray-800 text-white fixed top-0 left-0 right-0 z-50">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <a class="font-bold text-xl" href="{% url 'menu:menu_list' %}">{{ SITE_NAME }}</a>
@@ -74,9 +74,15 @@
                 </div>
                 
                 <!-- Мобильное меню -->
-                <button class="md:hidden text-white focus:outline-none" id="mobile-menu-button">
-                    <i class="fa-solid fa-bars text-2xl"></i>
-                </button>
+                <div class="md:hidden flex items-center space-x-4">
+                    <a href="{% url 'orders:cart' %}" class="relative">
+                        <i class="fa-solid fa-cart-shopping text-2xl text-white"></i>
+                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center cart-count">0</span>
+                    </a>
+                    <button class="text-white focus:outline-none" id="mobile-menu-button">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
             </div>
             
             <!-- Мобильное меню (скрыто по умолчанию) -->
@@ -97,16 +103,12 @@
                         </a>
                     </div>
                 </div>
-                <!-- Дополнительные пункты -->
-                <a class="block py-2 hover:text-gray-300" href="{% url 'orders:cart' %}">
-                    {% trans "Корзина" %} <span class="cart-count bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 ml-2">0</span>
-                </a>
             </div>
         </div>
     </nav>
     
     <!-- Основное содержимое страницы -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-8 mt-16">
         {% block content %}{% endblock %}
     </main>
     
