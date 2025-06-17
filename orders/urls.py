@@ -14,5 +14,5 @@ urlpatterns = [
     path('create/', views.create_order, name='create_order'),
     path('order/<int:pk>/', views.OrderDetailView.as_view(), name='order_detail'),
     path('order/<int:pk>/success/', views.OrderSuccessView.as_view(), name='order_success'),
-    path('callback/', views.PaymentCallbackView.as_view(), name='payment_callback'),
+    path('payment/callback/', views.PaymentCallbackView.as_view(), name='payment_callback'),
 ] 

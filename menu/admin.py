@@ -1,5 +1,8 @@
 from django.contrib import admin
+from django.contrib import messages
+from django.core.management import call_command
 from .models import Category, MenuItem, Station
+from .sync_utils import get_dish_names, sync_station_menu
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -30,5 +33,16 @@ class StationAdmin(admin.ModelAdmin):
     list_display = ('name', 'rkeeper_code', 'rkeeper_id', 'r_keeper_number', 'is_active')
     search_fields = ('name', 'rkeeper_code', 'rkeeper_id')
     list_filter = ('is_active',)
+    actions = ['sync_menu']
+
+    def sync_menu(self, request, queryset):
+        for station in queryset:
+            try:
+                call_command('sync_menu_from_stations', station_id=station.id)
+                self.message_user(request, f"Меню для станции {station.name} успешно синхронизировано")
+            except Exception as e:
+                self.message_user(request, f"Ошибка при синхронизации меню для станции {station.name}: {str(e)}", level=messages.ERROR)
+    
+    sync_menu.short_description = "Синхронизировать меню с R-Keeper"
 
 

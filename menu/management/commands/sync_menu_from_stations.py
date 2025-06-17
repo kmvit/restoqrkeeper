@@ -15,6 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
 from menu.models import Station, Category, MenuItem
+from orders.models import Waiter
 
 # Настройка логирования
 logging.basicConfig(
@@ -107,26 +108,92 @@ def get_station_menu(station):
     station_number = station.r_keeper_number
     if not station_number:
         logger.error(f"Не указан номер станции в R-Keeper для {station.name}")
-        return []
+        return [], None, None
     
     logger.info(f"Получение меню для станции {station.name} (номер: {station_number})")
-    xml_query = f'''<?xml version="1.0" encoding="utf-8"?>
+    
+    # Запрос для получения списка официантов
+    waiters_query = '''<?xml version="1.0" encoding="utf-8"?>
     <RK7Query>
-        <RK7CMD CMD="GetOrderMenu">
-            <Station code="{station_number}"/>
-            <Order>
-                <Table>
-                    <Station code="{station_number}"/>
-                </Table>
-            </Order>
-        </RK7CMD>
-    </RK7Query>
-    '''
+        <RK7Command CMD="GetRefData" RefName="EMPLOYEES" OnlyActive="1">
+            <PROPFILTER>
+                <PROP name="Ident"/>
+                <PROP name="Code"/>
+                <PROP name="Name"/>
+                <PROP name="Status"/>
+                <PROP name="MainParentIdent"/>
+                <PROP name="Flags"/>
+            </PROPFILTER>
+        </RK7Command>
+    </RK7Query>'''
     
     try:
+        # Получаем список официантов
+        waiters_response = session.post(
+            base_url,
+            data=waiters_query.encode('utf-8'),
+            verify=False,
+            headers={'Content-Type': 'application/xml'}
+        )
+        waiters_response.raise_for_status()
+        
+        # Логируем ответ для отладки
+        logger.info(f"Ответ от R-Keeper по запросу официантов: {waiters_response.text[:1000]}")
+        
+        # Парсим ответ со списком официантов
+        waiters_root = ET.fromstring(waiters_response.text)
+        
+        # Проверяем статус ответа
+        status = waiters_root.get('Status')
+        if status != "Ok":
+            logger.error(f"Ошибка при получении списка персонала: {waiters_root.get('ErrorText')}")
+            waiter_info = None
+        else:
+            waiters = waiters_root.findall('.//Item')
+            logger.info(f"Найдено {len(waiters)} сотрудников в ответе")
+            
+            # Сохраняем всех найденных сотрудников
+            for waiter in waiters:
+                waiter_info = {
+                    'code': waiter.get('Code', ''),
+                    'name': waiter.get('Name', ''),
+                    'guid': waiter.get('Ident', ''),
+                }
+                logger.info(f"Начинаем синхронизацию сотрудника: {waiter_info}")
+                try:
+                    waiter_obj, created = Waiter.objects.update_or_create(
+                        code=waiter_info['code'],
+                        defaults={
+                            'name': waiter_info['name'],
+                            'guid': waiter_info['guid'],
+                            'is_active': True
+                        }
+                    )
+                    if created:
+                        logger.info(f"Создан новый сотрудник: {waiter_obj.name}")
+                    else:
+                        logger.info(f"Обновлен сотрудник: {waiter_obj.name}")
+                except Exception as e:
+                    logger.error(f"Ошибка при создании/обновлении сотрудника {waiter_info['name']}: {e}")
+                    logger.exception("Полный стек ошибки:")
+    
+        # Запрос для получения меню
+        menu_query = f'''<?xml version="1.0" encoding="utf-8"?>
+        <RK7Query>
+            <RK7CMD CMD="GetOrderMenu" onlyActive="1">
+                <Station code="{station_number}"/>
+                <Order>
+                    <Table>
+                        <Station code="{station_number}"/>
+                    </Table>
+                    <Waiter code=""/>
+                </Order>
+            </RK7CMD>
+        </RK7Query>'''
+        
         response = session.post(
             base_url,
-            data=xml_query.encode('utf-8'),
+            data=menu_query.encode('utf-8'),
             verify=False,
             headers={'Content-Type': 'application/xml'}
         )
@@ -139,22 +206,23 @@ def get_station_menu(station):
         status = root.get('Status')
         if status != "Ok":
             logger.error(f"Ошибка при получении меню для {station.name}: {root.get('ErrorText')}")
-            return []
+            return [], None, None
         
         # Получаем список блюд
         dishes = root.findall('.//Dishes/Item')
         logger.info(f"Получено {len(dishes)} позиций для станции {station.name}")
-        return dishes
+        return dishes, waiter_info, None
     except Exception as e:
         logger.error(f"Ошибка при получении меню для станции {station.name}: {e}")
-        return []
+        logger.exception("Полный стек ошибки:")
+        return [], None, None
 
 def sync_station_menu(station, dish_names):
     """Синхронизирует меню для конкретной станции"""
     logger.info(f"Синхронизация меню для станции {station.name}")
     
-    # Получаем меню станции
-    dishes = get_station_menu(station)
+    # Получаем меню станции и информацию об официанте
+    dishes, waiter_info, table_info = get_station_menu(station)
     if not dishes:
         logger.warning(f"Для станции {station.name} не получено ни одной позиции меню")
         return False
@@ -202,14 +270,9 @@ def sync_station_menu(station, dish_names):
                     'quantity': quantity,
                     'category': categories[category_name],
                     'is_available': True,
-                    'last_updated': timezone.now(),
-                    'comment': dish_info.get('comment', '')
+                    'last_updated': timezone.now()
                 }
             )
-            if created:
-                logger.info(f"Создана новая позиция меню: {dish_info['name']} для станции {station.name}")
-            else:
-                logger.info(f"Обновлена позиция меню: {dish_info['name']} для станции {station.name}")
         except Exception as e:
             logger.error(f"Ошибка при создании/обновлении позиции меню {dish_info['name']}: {e}")
     
@@ -218,61 +281,72 @@ def sync_station_menu(station, dish_names):
         rkeeper_id__in=[dish.get('Ident') for dish in dishes]
     ).update(is_available=False, last_updated=timezone.now())
     
+    # Синхронизируем информацию об официанте, если она есть
+    if waiter_info:
+        logger.info(f"Начинаем синхронизацию официанта: {waiter_info}")
+        try:
+            waiter_obj, created = Waiter.objects.update_or_create(
+                code=waiter_info['code'],
+                defaults={
+                    'name': waiter_info['name'],
+                    'guid': waiter_info['guid'],
+                    'is_active': True
+                }
+            )
+            if created:
+                logger.info(f"Создан новый официант: {waiter_obj.name}")
+            else:
+                logger.info(f"Обновлен официант: {waiter_obj.name}")
+        except Exception as e:
+            logger.error(f"Ошибка при создании/обновлении официанта {waiter_info['name']}: {e}")
+            logger.exception("Полный стек ошибки:")
+    else:
+        logger.warning("Информация об официанте отсутствует")
+    
     logger.info(f"Синхронизация меню для станции {station.name} завершена")
     return True
 
 class Command(BaseCommand):
-    help = 'Синхронизация меню из станций R-Keeper'
+    help = 'Синхронизация меню и официантов из станций R-Keeper'
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--station',
-            type=str,
-            help='Название станции для синхронизации (если не указано, синхронизируются все станции)'
+            '--station_id',
+            type=int,
+            help='ID конкретной станции для синхронизации',
+            required=False
         )
 
     def handle(self, *args, **options):
-        # Импортируем модели после настройки Django
-        from menu.models import Station, Category, MenuItem
-        
-        logger.info("Начало синхронизации меню")
+        station_id = options.get('station_id')
         
         # Получаем справочник названий блюд
         dish_names = get_dish_names()
         if not dish_names:
-            logger.error("Не удалось получить справочник блюд. Синхронизация прервана.")
             self.stdout.write(self.style.ERROR("Не удалось получить справочник блюд. Синхронизация прервана."))
             return
         
-        # Получаем активные станции из базы данных
-        if options['station']:
-            stations = Station.objects.filter(name=options['station'], is_active=True)
-            if not stations:
-                logger.warning(f"Станция с названием {options['station']} не найдена или неактивна")
-                self.stdout.write(self.style.WARNING(f"Станция с названием {options['station']} не найдена или неактивна"))
+        # Получаем станции для синхронизации
+        if station_id:
+            stations = Station.objects.filter(id=station_id, is_active=True)
+            if not stations.exists():
+                self.stdout.write(self.style.ERROR(f"Станция с ID {station_id} не найдена или неактивна"))
                 return
         else:
             stations = Station.objects.filter(is_active=True)
-            if not stations:
-                logger.warning("Нет активных станций в базе данных")
+            if not stations.exists():
                 self.stdout.write(self.style.WARNING("Нет активных станций в базе данных"))
                 return
         
-        logger.info(f"Найдено {stations.count()} активных станций в базе данных")
-        self.stdout.write(f"Найдено {stations.count()} активных станций в базе данных")
+        self.stdout.write(f"Найдено {stations.count()} активных станций для синхронизации")
         
         # Синхронизируем меню для каждой станции
         for station in stations:
             try:
                 with transaction.atomic():
-                    success = sync_station_menu(station, dish_names)
-                    if success:
-                        self.stdout.write(self.style.SUCCESS(f"Меню станции {station.name} успешно синхронизировано"))
-                    else:
-                        self.stdout.write(self.style.WARNING(f"Не удалось синхронизировать меню станции {station.name}"))
+                    sync_station_menu(station, dish_names)
+                self.stdout.write(self.style.SUCCESS(f"Меню для станции {station.name} успешно синхронизировано"))
             except Exception as e:
-                logger.error(f"Ошибка при синхронизации меню для станции {station.name}: {e}")
                 self.stdout.write(self.style.ERROR(f"Ошибка при синхронизации меню для станции {station.name}: {e}"))
         
-        logger.info("Синхронизация меню завершена")
         self.stdout.write(self.style.SUCCESS("Синхронизация меню завершена")) 

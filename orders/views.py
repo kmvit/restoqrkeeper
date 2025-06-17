@@ -10,7 +10,7 @@ import json
 import logging
 from django.urls import reverse
 
-from .models import Order, OrderItem, Waiter
+from .models import Order, OrderItem, Waiter, Table
 from menu.models import MenuItem
 from .services.forte_payment import ForteBankPaymentService
 from .services.rkeeper_service import RKeeperService
@@ -294,19 +294,19 @@ def create_order(request):
     comment = request.POST.get('comment', '')
     table_number = request.session.get('table_number')
     
-    # Ищем официанта по номеру стола
-    waiter = None
+    # Получаем объект стола
+    table = None
     if table_number:
         try:
-            waiter = Waiter.objects.get(table_number=table_number, is_active=True)
-        except Waiter.DoesNotExist:
-            logger.warning(f"Не найден активный официант для стола {table_number}")
+            table = Table.objects.get(number=table_number, is_active=True)
+        except Table.DoesNotExist:
+            logger.warning(f"Не найден активный стол с номером {table_number}")
     
     # Создаем заказ в базе данных
     order = Order.objects.create(
-        table_number=table_number,
+        table=table,
         station_id=request.session.get('station_code'),
-        waiter=waiter,  # Привязываем официанта к заказу
+        waiter=table.waiter if table else None,
         total_amount=total_amount,
         status='new',
         comment=comment
@@ -325,28 +325,25 @@ def create_order(request):
             comment=comment
         )
     
-    # Отправляем заказ в R-Keeper
+    # Создаем платеж в ForteBank
     try:
-        rkeeper_service = RKeeperService()
-        rkeeper_order_id = rkeeper_service.send_order(order)
-        if rkeeper_order_id:
-            order.rkeeper_order_id = rkeeper_order_id
-            order.status = 'processing'
-            order.save()
-            logger.info(f"Заказ #{order.id} успешно отправлен в R-Keeper")
-        else:
-            logger.error(f"Не удалось отправить заказ #{order.id} в R-Keeper")
+        payment_service = ForteBankPaymentService()
+        payment_data = payment_service.create_payment(order)
+        
+        # Сохраняем payment_id в заказе
+        order.payment_id = payment_data.get('payment_id')
+        order.save()
+        
+        # Очищаем корзину
+        request.session['cart'] = {}
+        
+        # Перенаправляем на платежный виджет ForteBank
+        return redirect(payment_data.get('payment_url'))
+        
     except Exception as e:
-        logger.error(f"Ошибка при отправке заказа в R-Keeper: {e}")
-    
-    # Очищаем корзину
-    request.session['cart'] = {}
-    
-    # Перенаправляем на страницу успешного оформления заказа с параметрами станции и стола
-    station = order.station_id or request.session.get('station_code')
-    table = order.table_number or request.session.get('table_number')
-    success_url = reverse('orders:order_success', kwargs={'pk': order.pk}) + f'?station_id={station}&table={table}'
-    return redirect(success_url)
+        logger.error(f"Ошибка при создании платежа: {e}")
+        messages.error(request, 'Произошла ошибка при создании платежа. Пожалуйста, попробуйте позже.')
+        return redirect('orders:cart')
 
 class OrderDetailView(DetailView):
     model = Order
@@ -373,10 +370,11 @@ class PaymentCallbackView(View):
             order = Order.objects.get(payment_id=payment_id)
             
             if status == 'success':
+                # Сначала обновляем статус заказа
                 order.status = 'paid'
                 order.save()
                 
-                # Отправка заказа в R-Keeper
+                # Затем отправляем заказ в R-Keeper
                 rkeeper_service = RKeeperService()
                 try:
                     rkeeper_order_id = rkeeper_service.send_order(order)
