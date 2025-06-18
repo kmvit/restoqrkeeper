@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, View
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -331,7 +331,7 @@ def create_order(request):
         payment_data = payment_service.create_payment(order)
         
         # Сохраняем payment_id в заказе
-        order.payment_id = payment_data.get('payment_id')
+        order.payment_id = payment_data.get('order_id')
         order.save()
         
         # Очищаем корзину
@@ -359,47 +359,84 @@ class OrderDetailView(DetailView):
 @method_decorator(csrf_exempt, name='dispatch')
 class PaymentCallbackView(View):
     def post(self, request, *args, **kwargs):
+        return self._handle_callback(request)
+        
+    def get(self, request, *args, **kwargs):
+        return self._handle_callback(request)
+        
+    def _handle_callback(self, request):
+        """
+        Обработчик callback'а от платежной системы ForteBank.
+        Обрабатывает как POST, так и GET запросы.
+        """
+        logger.info(f"Received payment callback. Method: {request.method}")
+        
         try:
-            data = json.loads(request.body)
-            payment_id = data.get('payment_id')
-            status = data.get('status')
+            if request.method == "POST":
+                data = json.loads(request.body)
+            else:  # GET request
+                data = request.GET.dict()
+                
+            logger.info(f"Payment callback data: {data}")
+            
+            # Получаем ID и статус из данных ForteBank
+            payment_id = data.get('ID') or data.get('id')
+            status = data.get('STATUS') or data.get('status')
             
             if not payment_id or not status:
-                return JsonResponse({'error': 'Missing payment_id or status'}, status=400)
-            
-            order = Order.objects.get(payment_id=payment_id)
-            
-            if status == 'success':
-                # Сначала обновляем статус заказа
+                logger.error("Missing ID or STATUS in callback data")
+                return JsonResponse({'error': 'Missing ID or STATUS'}, status=400)
+                
+            try:
+                order = Order.objects.get(payment_id=payment_id)
+            except Order.DoesNotExist:
+                logger.error(f"Order with payment_id {payment_id} not found")
+                return JsonResponse({'error': 'Order not found'}, status=404)
+                
+            # Обновляем статус заказа в зависимости от статуса платежа
+            if status in ['FullyPaid', 'Completed', 'Success']:
+                # Сначала обновляем статус на 'paid'
                 order.status = 'paid'
                 order.save()
+                logger.info(f"Order {order.id} marked as paid")
                 
                 # Затем отправляем заказ в R-Keeper
-                rkeeper_service = RKeeperService()
                 try:
-                    rkeeper_order_id = rkeeper_service.send_order(order)
-                    if rkeeper_order_id:
-                        order.rkeeper_order_id = rkeeper_order_id
+                    rkeeper_service = RKeeperService()
+                    success = rkeeper_service.send_order(order)
+                    
+                    if success:
+                        # Только после успешной отправки в R-Keeper меняем статус на 'processing'
                         order.status = 'processing'
                         order.save()
-                        logger.info(f"Заказ #{order.id} успешно отправлен в R-Keeper")
+                        logger.info(f"Order {order.id} successfully sent to R-Keeper and marked as processing")
                     else:
-                        logger.error(f"Не удалось отправить заказ #{order.id} в R-Keeper")
+                        logger.error(f"Failed to send order {order.id} to R-Keeper")
                 except Exception as e:
-                    logger.error(f"Ошибка при отправке заказа в R-Keeper: {e}")
+                    logger.error(f"Error sending order to R-Keeper: {str(e)}", exc_info=True)
+                    
+            elif status in ['Cancelled', 'Canceled']:
+                order.status = 'cancelled'
+                order.save()
+                logger.info(f"Order {order.id} cancelled")
                 
-                return JsonResponse({'status': 'success'})
-            else:
+            elif status in ['Failed', 'Error', 'Rejected']:
                 order.status = 'failed'
                 order.save()
-                return JsonResponse({'status': 'failed'})
-                
-        except Order.DoesNotExist:
-            return JsonResponse({'error': 'Order not found'}, status=404)
+                logger.info(f"Order {order.id} payment failed")
+            
+            # Если это GET запрос, делаем редирект на главную страницу
+            if request.method == "GET":
+                return redirect('home')  # Предполагается, что у вас есть URL с именем 'home'
+            
+            return JsonResponse({'status': 'success'})
+            
         except json.JSONDecodeError:
+            logger.error("Invalid JSON in callback data")
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            logger.error(f"Error processing payment callback: {str(e)}", exc_info=True)
+            return JsonResponse({'error': 'Internal server error'}, status=500)
 
 class OrderSuccessView(DetailView):
     model = Order

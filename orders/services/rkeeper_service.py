@@ -128,7 +128,8 @@ class RKeeperService:
         Returns:
             str: GUID заказа в R-Keeper или None в случае ошибки
         """
-        table_number = order.table_number or 1  # Значение по умолчанию, если номер стола не указан
+        # Получаем номер стола из связанного объекта table
+        table_number = order.table.number if order.table else 1  # Значение по умолчанию, если стол не указан
         
         # Формируем комментарий с информацией о столе и официанте
         comment_parts = [f"Web Order - Стол: {table_number}"]

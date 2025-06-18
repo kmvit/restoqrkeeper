@@ -42,9 +42,14 @@ class ForteBankPaymentService:
         Returns:
             dict: Заголовок с закодированными учетными данными в формате Basic Auth.
         """
+        # Формируем составной логин и пароль
         credentials = f"{self.username}:{self.password}"
         encoded_credentials = base64.b64encode(credentials.encode()).decode()
-        return {'Authorization': f'Basic {encoded_credentials}'}
+        return {
+            'Authorization': f'Basic {encoded_credentials}',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
 
     def create_payment(self, order: Order) -> dict:
         """
@@ -54,8 +59,10 @@ class ForteBankPaymentService:
             order (Order): Объект заказа Django, содержащий информацию о платеже.
             
         Returns:
-            dict: Ответ от API ForteBank с данными созданного платежа.
-                Содержит payment_id и другие параметры платежа.
+            dict: Словарь с данными для оплаты, содержащий:
+                - payment_url: ссылка для перенаправления на оплату
+                - order_id: ID заказа в системе ForteBank
+                - status: статус заказа
                 
         Raises:
             requests.exceptions.RequestException: При ошибке HTTP-запроса.
@@ -63,42 +70,77 @@ class ForteBankPaymentService:
         """
         logger.info(f"Creating payment for order #{order.id}")
         payload = {
-            'merchant_id': self.merchant_id,
-            'amount': str(order.total_amount),
-            'currency': 'KZT',
-            'order_id': str(order.id),
-            'description': f'Оплата заказа #{order.id}',
-            'success_url': f'{settings.SITE_URL}/orders/success/',
-            'failure_url': f'{settings.SITE_URL}/orders/failure/',
-            'callback_url': f'{settings.SITE_URL}/orders/callback/',
-            'items': [
-                {
-                    'name': item.menu_item.name,
-                    'price': str(item.price),
-                    'quantity': item.quantity
-                } for item in order.items.all()
-            ]
+            "order": {
+                "typeRid": "Order_RID",
+                "language": "ru",
+                "amount": str(order.total_amount),
+                "currency": "KZT",
+                "hppRedirectUrl": f'{settings.SITE_URL}/orders/payment/callback/',
+                "description": f'Оплата заказа #{order.id}'
+            }
         }
 
-        headers = {
-            'Content-Type': 'application/json',
-            **self.auth_header
-        }
+        headers = self._get_auth_header()
+        
+        # Добавляем подробное логирование
+        logger.info(f"Request URL: {self.api_url}/order")
+        logger.info(f"Request headers: {headers}")
+        logger.info(f"Request payload: {payload}")
+        logger.info(f"Order total amount: {order.total_amount}")
 
         try:
-            logger.debug(f"Sending payment request with payload: {payload}")
+            api_url = f'{self.api_url}/order'
             response = requests.post(
-                f'{self.api_url}/api/v3/transactions/payment',
+                api_url,
                 json=payload,
-                headers=headers,
-                verify=True
+                headers=headers
             )
+            
+            logger.debug(f"Response status code: {response.status_code}")
+            logger.debug(f"Response headers: {response.headers}")
+            logger.debug(f"Response content: {response.text}")
+            
+            if response.status_code != 200:
+                logger.error(f"Error response from ForteBank: {response.text}")
+                logger.error(f"Request payload was: {payload}")
+                logger.error(f"Request headers were: {headers}")
+            
             response.raise_for_status()
-            logger.info(f"Payment created successfully for order #{order.id}")
-            return response.json()
+            response_data = response.json()
+            
+            # Формируем ссылку для оплаты
+            payment_url = f"{response_data['order']['hppUrl']}/?id={response_data['order']['id']}&password={response_data['order']['password']}"
+            
+            # Сохраняем ID платежа в заказе
+            order.payment_id = response_data['order']['id']
+            order.save()
+            
+            # Возвращаем только необходимые данные
+            return {
+                'payment_url': payment_url,
+                'order_id': response_data['order']['id'],
+                'status': response_data['order']['status']
+            }
+            
         except requests.exceptions.RequestException as e:
             logger.error(f"Error creating payment for order #{order.id}: {str(e)}", exc_info=True)
+            if hasattr(e.response, 'text'):
+                logger.error(f"Error response content: {e.response.text}")
             raise
+
+    def _generate_payment_url(self, hpp_url: str, order_id: int, password: str) -> str:
+        """
+        Формирует ссылку для оплаты заказа.
+        
+        Args:
+            hpp_url (str): Базовый URL платежной формы
+            order_id (int): ID заказа
+            password (str): Пароль заказа
+            
+        Returns:
+            str: Полная ссылка для оплаты
+        """
+        return f"{hpp_url}/flex/?id={order_id}&password={password}"
 
     def check_payment_status(self, payment_id: str) -> dict:
         """
