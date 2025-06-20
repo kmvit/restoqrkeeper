@@ -131,13 +131,17 @@ class RKeeperService:
         # Получаем номер стола из связанного объекта table
         table_number = order.table.number if order.table else 1  # Значение по умолчанию, если стол не указан
         
-        # Формируем комментарий с информацией о столе и официанте
+        # Формируем комментарий с информацией о столе, официанте и комментарии к заказу
         comment_parts = [f"Web Order - Стол: {table_number}"]
         if order.waiter:
             comment_parts.append(f"Официант: {order.waiter.name} (код: {order.waiter.code})")
+        if order.comment:
+            # Экранируем специальные символы в комментарии к заказу
+            escaped_comment = order.comment.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+            comment_parts.append(f"Комментарий: {escaped_comment}")
         persistent_comment = " | ".join(comment_parts)
         
-        # Создаем заказ с указанием номера стола и официанта
+        # Создаем заказ с указанием номера стола, официанта и комментария
         xml_query = f'''<?xml version="1.0" encoding="utf-8"?>
         <RK7Query>
          <RK7CMD CMD="CreateOrder">

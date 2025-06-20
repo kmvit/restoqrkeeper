@@ -269,7 +269,6 @@ def sync_station_menu(station, dish_names):
                     'price': price,
                     'quantity': quantity,
                     'category': categories[category_name],
-                    'is_available': True,
                     'last_updated': timezone.now()
                 }
             )

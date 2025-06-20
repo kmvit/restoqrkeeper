@@ -50,7 +50,7 @@ class Order(models.Model):
         ('new', 'Новый'),
         ('pending', 'Ожидает оплаты'),
         ('paid', 'Оплачен'),
-        ('processing', 'В обработке'),
+        ('processing', 'Оплачен и отправлен в R-Keeper'),
         ('completed', 'Завершен'),
         ('cancelled', 'Отменен'),
     ]

@@ -12,7 +12,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(MenuItem)
 class MenuItemAdmin(admin.ModelAdmin):
-    list_display = ('name', 'name_kk', 'category', 'quantity', 'category__station')
+    list_display = ('name', 'name_kk', 'category', 'quantity', 'category__station', 'is_available')
     list_filter = ('category__station',)
     search_fields = ('name', 'name_kk', 'description', 'description_kk')
     fieldsets = (
