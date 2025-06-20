@@ -129,10 +129,11 @@ class RKeeperService:
             str: GUID заказа в R-Keeper или None в случае ошибки
         """
         # Получаем номер стола из связанного объекта table
-        table_number = order.table.number if order.table else 1  # Значение по умолчанию, если стол не указан
+        table = order.table if order.table else None
+        table_number = table.number if table else 1  # Значение по умолчанию, если стол не указан
         
         # Формируем комментарий с информацией о столе, официанте и комментарии к заказу
-        comment_parts = [f"Web Order - Стол: {table_number}"]
+        comment_parts = [f"Web Order - Стол: {table.name}-{table_number}"]
         if order.waiter:
             comment_parts.append(f"Официант: {order.waiter.name} (код: {order.waiter.code})")
         if order.comment:
