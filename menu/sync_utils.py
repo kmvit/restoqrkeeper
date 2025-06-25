@@ -152,7 +152,12 @@ def sync_station_menu(station, dish_names):
     
     for dish in dishes:
         ident = dish.get('Ident', 'Н/Д')
-        price = float(dish.get('Price', 0)) / 100
+        price = float(dish.get('Price', 0)) / 100  # Конвертируем копейки в рубли
+        quantity = dish.get('Quantity', 0)
+        # Если количество равно 0, это означает неограниченное количество
+        if quantity == 0:
+            quantity = 2147483647  # Максимальное значение для IntegerField
+        
         dish_info = dish_names.get(ident, {
             'name': 'Без названия',
             'code': 'Н/Д',
@@ -172,28 +177,43 @@ def sync_station_menu(station, dish_names):
                 logger.info(f"Создана новая категория: {category_name} для станции {station.name}")
         
         try:
-            menu_item, created = MenuItem.objects.update_or_create(
+            menu_item, created = MenuItem.objects.get_or_create(
                 rkeeper_id=ident,
                 station=station,
                 defaults={
                     'name': dish_info['name'],
                     'description': dish_info['recipe'],
                     'price': price,
+                    'quantity': quantity,
                     'category': categories[category_name],
                     'is_available': True,
                     'last_updated': timezone.now()
                 }
             )
-            if created:
-                logger.info(f"Создана новая позиция меню: {dish_info['name']} для станции {station.name}")
-            else:
+            # Если запись уже существует, обновляем только цену и количество
+            if not created:
+                menu_item.price = price
+                menu_item.quantity = quantity
+                menu_item.last_updated = timezone.now()
+                menu_item.save(update_fields=['price', 'quantity', 'last_updated'])
                 logger.info(f"Обновлена позиция меню: {dish_info['name']} для станции {station.name}")
+            else:
+                logger.info(f"Создана новая позиция меню: {dish_info['name']} для станции {station.name}")
         except Exception as e:
             logger.error(f"Ошибка при создании/обновлении позиции меню {dish_info['name']}: {e}")
     
-    MenuItem.objects.filter(station=station).exclude(
+    # Удаляем позиции, которых больше нет в меню R-Keeper
+    items_to_delete = MenuItem.objects.filter(station=station).exclude(
         rkeeper_id__in=[dish.get('Ident') for dish in dishes]
-    ).update(is_available=False, last_updated=timezone.now())
+    )
+    
+    if items_to_delete.exists():
+        deleted_items = list(items_to_delete.values_list('name', flat=True))
+        deleted_count = items_to_delete.count()
+        logger.info(f"Удаляем {deleted_count} позиций из меню станции {station.name}: {', '.join(deleted_items)}")
+        items_to_delete.delete()
+    else:
+        logger.info(f"Нет позиций для удаления из меню станции {station.name}")
     
     logger.info(f"Синхронизация меню для станции {station.name} завершена")
     return True 

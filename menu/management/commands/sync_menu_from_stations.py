@@ -260,7 +260,7 @@ def sync_station_menu(station, dish_names):
         
         # Создаем или обновляем позицию меню
         try:
-            menu_item, created = MenuItem.objects.update_or_create(
+            menu_item, created = MenuItem.objects.get_or_create(
                 rkeeper_id=ident,
                 station=station,
                 defaults={
@@ -272,13 +272,27 @@ def sync_station_menu(station, dish_names):
                     'last_updated': timezone.now()
                 }
             )
+            # Если запись уже существует, обновляем только цену и количество
+            if not created:
+                menu_item.price = price
+                menu_item.quantity = quantity
+                menu_item.last_updated = timezone.now()
+                menu_item.save(update_fields=['price', 'quantity', 'last_updated'])
         except Exception as e:
             logger.error(f"Ошибка при создании/обновлении позиции меню {dish_info['name']}: {e}")
     
-    # Помечаем все позиции, которых нет в текущем меню, как недоступные
-    MenuItem.objects.filter(station=station).exclude(
+    # Удаляем позиции, которых больше нет в меню R-Keeper
+    items_to_delete = MenuItem.objects.filter(station=station).exclude(
         rkeeper_id__in=[dish.get('Ident') for dish in dishes]
-    ).update(is_available=False, last_updated=timezone.now())
+    )
+    
+    if items_to_delete.exists():
+        deleted_items = list(items_to_delete.values_list('name', flat=True))
+        deleted_count = items_to_delete.count()
+        logger.info(f"Удаляем {deleted_count} позиций из меню станции {station.name}: {', '.join(deleted_items)}")
+        items_to_delete.delete()
+    else:
+        logger.info(f"Нет позиций для удаления из меню станции {station.name}")
     
     # Синхронизируем информацию об официанте, если она есть
     if waiter_info:
