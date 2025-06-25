@@ -6,6 +6,7 @@ services:
     restart: always
     depends_on:
       - db
+      - redis
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -32,6 +33,40 @@ services:
     ports:
       - "5433:5432"
     restart: always
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    restart: always
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/restaurant_db
+    command: celery -A restaurant_project worker --loglevel=info
+
+  celery-beat:
+    build: .
+    restart: always
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/restaurant_db
+    command: celery -A restaurant_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
   nginx:
     image: nginx:1.23

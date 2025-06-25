@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.core.management import call_command
 from .models import Category, MenuItem, Station
 from .sync_utils import get_dish_names, sync_station_menu
+from .tasks import manual_sync_menu_task
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

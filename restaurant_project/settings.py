@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_beat',
+    'django_celery_results',
     'menu',
     'orders',
     'core',
@@ -194,6 +196,26 @@ CURRENCY_SYMBOL = os.environ.get('CURRENCY_SYMBOL', '₸')
 # Настройки для столов
 MIN_TABLE_NUMBER = int(os.environ.get('MIN_TABLE_NUMBER', 1))
 MAX_TABLE_NUMBER = int(os.environ.get('MAX_TABLE_NUMBER', 100))
+
+# Настройки Celery
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'django-db')
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Настройки Celery Beat для периодических задач
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULE = {
+    'sync-menu-from-stations': {
+        'task': 'menu.tasks.sync_menu_from_stations_task',
+        'schedule': 300.0,  # каждые 5 минут (300 секунд)
+        'options': {'expires': 60.0},  # задача истекает через 1 минуту если не выполнена
+    },
+}
 
 # Настройки логирования
 LOGGING = {

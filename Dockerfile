@@ -10,13 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     postgresql-client \
     libpq-dev \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Копирование requirements.txt
 COPY requirements.txt .
 
 # Установка зависимостей Python
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install git+https://github.com/celery/django-celery-beat.git
 
 # Создание директорий для статических файлов и установка прав
 RUN mkdir -p /app/staticfiles /app/media && \
