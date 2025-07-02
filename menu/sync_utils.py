@@ -190,30 +190,31 @@ def sync_station_menu(station, dish_names):
                     'last_updated': timezone.now()
                 }
             )
-            # Если запись уже существует, обновляем только цену и количество
+            # Если запись уже существует, обновляем цену, количество и доступность
             if not created:
                 menu_item.price = price
                 menu_item.quantity = quantity
+                menu_item.is_available = True  # Включаем блюдо, если оно есть в меню
                 menu_item.last_updated = timezone.now()
-                menu_item.save(update_fields=['price', 'quantity', 'last_updated'])
+                menu_item.save(update_fields=['price', 'quantity', 'is_available', 'last_updated'])
                 logger.info(f"Обновлена позиция меню: {dish_info['name']} для станции {station.name}")
             else:
                 logger.info(f"Создана новая позиция меню: {dish_info['name']} для станции {station.name}")
         except Exception as e:
             logger.error(f"Ошибка при создании/обновлении позиции меню {dish_info['name']}: {e}")
     
-    # Удаляем позиции, которых больше нет в меню R-Keeper
-    items_to_delete = MenuItem.objects.filter(station=station).exclude(
+    # Отключаем позиции, которых больше нет в меню R-Keeper
+    items_to_disable = MenuItem.objects.filter(station=station).exclude(
         rkeeper_id__in=[dish.get('Ident') for dish in dishes]
     )
     
-    if items_to_delete.exists():
-        deleted_items = list(items_to_delete.values_list('name', flat=True))
-        deleted_count = items_to_delete.count()
-        logger.info(f"Удаляем {deleted_count} позиций из меню станции {station.name}: {', '.join(deleted_items)}")
-        items_to_delete.delete()
+    if items_to_disable.exists():
+        disabled_items = list(items_to_disable.values_list('name', flat=True))
+        disabled_count = items_to_disable.count()
+        logger.info(f"Отключаем {disabled_count} позиций из меню станции {station.name}: {', '.join(disabled_items)}")
+        items_to_disable.update(is_available=False)
     else:
-        logger.info(f"Нет позиций для удаления из меню станции {station.name}")
+        logger.info(f"Нет позиций для отключения из меню станции {station.name}")
     
     logger.info(f"Синхронизация меню для станции {station.name} завершена")
     return True 
