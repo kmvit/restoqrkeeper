@@ -196,6 +196,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
+            // Скрываем кнопки категорий, в которых нет видимых элементов
+            const categoryButtons = document.querySelectorAll('[data-category]');
+            categoryButtons.forEach(button => {
+                if (button.dataset.category === 'all') return; // Пропускаем кнопку "Все"
+                
+                const categoryId = button.dataset.category;
+                const hasVisibleItems = Array.from(menuItems).some(item => 
+                    item.dataset.category === categoryId && 
+                    !item.classList.contains('hidden')
+                );
+                
+                if (!hasVisibleItems) {
+                    button.style.display = 'none';
+                } else {
+                    button.style.display = 'inline-block';
+                }
+            });
+            
             // Предотвращаем изменение URL
             history.replaceState(null, null, ' ');
         });
@@ -304,6 +322,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+        
+        // Скрываем кнопки категорий, в которых нет видимых элементов после поиска
+        const categoryButtons = document.querySelectorAll('[data-category]');
+        categoryButtons.forEach(button => {
+            if (button.dataset.category === 'all') return; // Пропускаем кнопку "Все"
+            
+            const categoryId = button.dataset.category;
+            const hasVisibleItems = Array.from(menuItems).some(item => 
+                item.dataset.category === categoryId && 
+                !item.classList.contains('hidden')
+            );
+            
+            if (!hasVisibleItems) {
+                button.style.display = 'none';
+            } else {
+                button.style.display = 'inline-block';
+            }
+        });
     });
     
     // Очистка поиска при переключении категорий

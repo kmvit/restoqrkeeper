@@ -1,12 +1,23 @@
 from django.conf import settings
 from .models import Page
+from orders.models import Table
 
 def table_number(request):
     """
-    Добавляет номер стола в контекст шаблона
+    Добавляет номер стола и объект стола в контекст шаблона
     """
+    table_number = getattr(request, 'table_number', None)
+    table = None
+    
+    if table_number:
+        try:
+            table = Table.objects.get(number=table_number, is_active=True)
+        except Table.DoesNotExist:
+            pass
+    
     return {
-        'table_number': getattr(request, 'table_number', None),
+        'table_number': table_number,
+        'table': table,
     }
 
 def site_settings(request):

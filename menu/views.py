@@ -43,9 +43,15 @@ def menu_list(request, station_id=None, table=None):
                 if item.description_kk:
                     item.description = item.description_kk
         
+        # Получаем только те категории, в которых есть доступные блюда
+        categories_with_items = Category.objects.filter(
+            station=station,
+            menuitem__is_available=True
+        ).distinct()
+        
         context.update({
             'station': station,
-            'categories': Category.objects.filter(station=station),
+            'categories': categories_with_items,
             'items': items
         })
         

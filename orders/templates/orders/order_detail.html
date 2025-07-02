@@ -13,7 +13,12 @@
                 <div class="p-6">
                     <h5 class="text-xl font-bold mb-4">{% trans "Информация о заказе" %}</h5>
                     <p class="mb-2">
-                        <span class="font-semibold">{% trans "Номер стола" %}:</span> {{ order.table_number }}
+                        <span class="font-semibold">{% trans "Стол" %}:</span> 
+                        {% if order.table %}
+                            {% if order.table.name %}{{ order.table.name }}{% else %}{% trans "Стол" %} {{ order.table.number }}{% endif %}
+                        {% else %}
+                            {% trans "Не указан" %}
+                        {% endif %}
                     </p>
                     <p class="mb-2">
                         <span class="font-semibold">{% trans "Статус" %}:</span> 
