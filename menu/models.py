@@ -44,6 +44,7 @@ class MenuItem(models.Model):
     station = models.ForeignKey(Station, on_delete=models.CASCADE, verbose_name='Станция', null=True, blank=True)
     rkeeper_id = models.CharField(max_length=50, verbose_name='ID в R-Keeper', null=True, blank=True)
     is_available = models.BooleanField(default=True, verbose_name='Доступно')
+    stop_list = models.BooleanField(default=True, verbose_name='Выключено в меню вручную')
     last_updated = models.DateTimeField(auto_now=True, verbose_name='Последнее обновление')
 
     class Meta:

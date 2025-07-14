@@ -269,19 +269,25 @@ def sync_station_menu(station, dish_names):
                     'price': price,
                     'quantity': quantity,
                     'category': categories[category_name],
+                    'is_available': True,  # Позиция доступна в R-Keeper
+                    'stop_list': False,    # По умолчанию не в стоп-листе
                     'last_updated': timezone.now()
                 }
             )
-            # Если запись уже существует, обновляем только цену и количество
+            # Если запись уже существует, обновляем только определенные поля
             if not created:
+                # Обновляем только поля, которые приходят из R-Keeper
+                # НЕ обновляем stop_list - это поле управляется только в админке
                 menu_item.price = price
                 menu_item.quantity = quantity
+                menu_item.is_available = True  # Позиция доступна в R-Keeper
                 menu_item.last_updated = timezone.now()
-                menu_item.save(update_fields=['price', 'quantity', 'last_updated'])
+                menu_item.save(update_fields=['price', 'quantity', 'is_available', 'last_updated'])
         except Exception as e:
             logger.error(f"Ошибка при создании/обновлении позиции меню {dish_info['name']}: {e}")
     
     # Отключаем позиции, которых больше нет в меню R-Keeper
+    # НЕ изменяем stop_list - это поле управляется только в админке
     items_to_disable = MenuItem.objects.filter(station=station).exclude(
         rkeeper_id__in=[dish.get('Ident') for dish in dishes]
     )
@@ -290,6 +296,8 @@ def sync_station_menu(station, dish_names):
         disabled_items = list(items_to_disable.values_list('name', flat=True))
         disabled_count = items_to_disable.count()
         logger.info(f"Отключаем {disabled_count} позиций из меню станции {station.name}: {', '.join(disabled_items)}")
+        # Устанавливаем is_available=False для позиций, которых нет в R-Keeper
+        # НЕ изменяем stop_list - это поле остается как есть
         items_to_disable.update(is_available=False)
     else:
         logger.info(f"Нет позиций для отключения из меню станции {station.name}")

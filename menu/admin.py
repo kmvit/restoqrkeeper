@@ -13,8 +13,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(MenuItem)
 class MenuItemAdmin(admin.ModelAdmin):
-    list_display = ('name', 'name_kk', 'category', 'quantity', 'category__station', 'is_available')
-    list_filter = ('category__station',)
+    list_display = ('name', 'name_kk', 'category', 'quantity', 'category__station', 'is_available', 'stop_list')
+    list_filter = ('category__station', 'is_available', 'stop_list')
     search_fields = ('name', 'name_kk', 'description', 'description_kk')
     fieldsets = (
         ('Основная информация', {

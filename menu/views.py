@@ -32,7 +32,8 @@ def menu_list(request, station_id=None, table=None):
         station = get_object_or_404(Station, rkeeper_id=station_code, is_active=True)
         items = MenuItem.objects.filter(
             station=station,
-            is_available=True
+            is_available=True,  # Позиция доступна в R-Keeper
+            stop_list=False     # Позиция не в стоп-листе (не выключена вручную)
         ).select_related('category').order_by('category__name', 'name')
         
         # Если язык казахский, заменяем названия и описания на казахские
@@ -46,7 +47,8 @@ def menu_list(request, station_id=None, table=None):
         # Получаем только те категории, в которых есть доступные блюда
         categories_with_items = Category.objects.filter(
             station=station,
-            menuitem__is_available=True
+            menuitem__is_available=True,  # Позиция доступна в R-Keeper
+            menuitem__stop_list=False     # Позиция не в стоп-листе
         ).distinct()
         
         context.update({
@@ -74,7 +76,7 @@ def menu_detail(request, item_id):
     table_number = request.session.get('table_number')
     
     # Получаем позицию меню
-    item = get_object_or_404(MenuItem, id=item_id, is_available=True)
+    item = get_object_or_404(MenuItem, id=item_id, is_available=True, stop_list=False)
     
     # Если станция указана, проверяем что элемент принадлежит этой станции
     if station_code:
