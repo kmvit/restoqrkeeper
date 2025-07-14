@@ -18,7 +18,7 @@ class MenuItemAdmin(admin.ModelAdmin):
     search_fields = ('name', 'name_kk', 'description', 'description_kk')
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name', 'name_kk', 'category', 'station', 'price', 'quantity', 'is_available')
+            'fields': ('name', 'name_kk', 'category', 'station', 'price', 'quantity', 'is_available', 'stop_list')
         }),
         ('Описание', {
             'fields': ('description', 'description_kk')
