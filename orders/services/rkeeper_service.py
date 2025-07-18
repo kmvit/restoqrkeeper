@@ -95,6 +95,10 @@ class RKeeperService:
             station_code = 15002  # Код станции по умолчанию
         
         try:
+            # Проверяем текущий seqNumber перед отправкой
+            current_seq = cache.get(self.cache_key)
+            logger.info(f"Текущий seqNumber перед отправкой заказа: {current_seq}")
+            
             # Создаем заказ в R-Keeper и сохраняем начальный seqNumber
             order_guid = self._create_order(order, station_code)
             
@@ -109,6 +113,10 @@ class RKeeperService:
                 logger.error(f"Не удалось добавить блюда в заказ R-Keeper для заказа #{order.id}")
                 # Если не удалось добавить блюда, но заказ создан, всё равно возвращаем его ID
                 return order_guid
+            
+            # Проверяем финальный seqNumber после успешной отправки
+            final_seq = cache.get(self.cache_key)
+            logger.info(f"Финальный seqNumber после отправки заказа: {final_seq}")
             
             logger.info(f"Заказ #{order.id} успешно создан в R-Keeper с идентификатором {order_guid}")
             return order_guid
@@ -202,7 +210,7 @@ class RKeeperService:
             logger.error(f"Ошибка при создании заказа в R-Keeper: {str(e)}")
             return None
     
-    def _add_items_to_order(self, order_guid, order, station_code):
+    def _add_items_to_order(self, order_guid, order, station_code, retry_count=0):
         """
         Добавление позиций в заказ R-Keeper
         
@@ -210,15 +218,21 @@ class RKeeperService:
             order_guid (str): GUID заказа в R-Keeper
             order (Order): Объект заказа
             station_code (int): Код станции
+            retry_count (int): Количество попыток (для предотвращения бесконечной рекурсии)
         
         Returns:
             bool: True в случае успеха, False в случае ошибки
         """
+        # Ограничиваем количество попыток
+        if retry_count >= 3:
+            logger.error(f"Превышено максимальное количество попыток ({retry_count}) для заказа {order_guid}")
+            return False
+        
         # Подготовка XML для блюд
         dish_elements = []
         
         items = order.items.all()
-        logger.info(f"Добавление блюд в заказ {order_guid}, найдено {items.count()} позиций")
+        logger.info(f"Добавление блюд в заказ {order_guid}, найдено {items.count()} позиций (попытка {retry_count + 1})")
         
         for item in items:
             try:
@@ -254,6 +268,7 @@ class RKeeperService:
         
         # Формируем XML-запрос с информацией лицензии из заказа
         dishes_xml = "\n".join(dish_elements)
+        
         # Получаем текущий seqNumber из кэша или инициализируем новый для первого запроса
         seq = cache.get(self.cache_key)
         if seq is None:
@@ -261,13 +276,15 @@ class RKeeperService:
             seq = 0
             cache.set(self.cache_key, seq)
             logger.info("Initial seqNumber set to 0 for new license instance")
-        logger.info(f"Используем seqNumber={seq} для SaveOrder")
+        
+        logger.info(f"Используем seqNumber={seq} для SaveOrder (попытка {retry_count + 1})")
+        
         license_xml = ''
         if self.license_anchor and self.license_token and self.license_instance_guid:
             license_xml = f'''<LicenseInfo anchor="{self.license_anchor}" licenseToken="{self.license_token}">
              <LicenseInstance guid="{self.license_instance_guid}" seqNumber="{seq}"/>
         </LicenseInfo>'''
-            # seqNumber увеличивается после успешного SaveOrder
+        
         xml_query = f'''<?xml version="1.0" encoding="utf-8"?>
         <RK7Query>
          <RK7CMD CMD="SaveOrder">
@@ -303,38 +320,48 @@ class RKeeperService:
             if status != "Ok":
                 error_text = root.get('ErrorText', 'Неизвестная ошибка')
                 error_code = root.get('RK7ErrorN', '')
-                logger.warning(f"SaveOrder returned error {error_code}: {error_text}")
+                logger.warning(f"SaveOrder returned error {error_code}: {error_text} (попытка {retry_count + 1})")
+                
                 # Ошибка 5304: инстанс лицензии не найден → создаём новый инстанс
                 if error_code == '5304':
                     cache.set(self.cache_key, 0)
                     logger.info(f"Reset seqNumber to 0 for error 5304 and retry")
-                    return self._add_items_to_order(order_guid, order, station_code)
+                    return self._add_items_to_order(order_guid, order, station_code, retry_count + 1)
+                
                 # Ошибки 5305/5310: seqNumber неверен или не увеличен → узнаём актуальный
                 if error_code in ['5305', '5310']:
                     try:
                         correct_seq = self._get_license_seq()
-                        # Для повторного SaveOrder увеличиваем seqNumber на 1
-                        retry_seq = correct_seq + 1
-                        cache.set(self.cache_key, retry_seq)
-                        logger.info(f"Updated seqNumber from server ({correct_seq}) to {retry_seq} for retry")
-                        return self._add_items_to_order(order_guid, order, station_code)
+                        # Для повторного SaveOrder используем полученный seqNumber
+                        cache.set(self.cache_key, correct_seq)
+                        logger.info(f"Updated seqNumber from server to {correct_seq} for retry")
+                        return self._add_items_to_order(order_guid, order, station_code, retry_count + 1)
                     except Exception as e:
                         logger.error(f"Failed to refresh seqNumber on error {error_code}: {e}")
-                        return False
+                        # Если не удалось получить правильный seqNumber, сбрасываем в 0
+                        cache.set(self.cache_key, 0)
+                        logger.info("Reset seqNumber to 0 due to error getting correct seqNumber")
+                        return self._add_items_to_order(order_guid, order, station_code, retry_count + 1)
+                
                 # Ошибка лицензии другого типа
                 if error_text and 'License check' in error_text:
                     logger.warning(f"License check error during SaveOrder: {error_text}")
                     return True
+                
                 logger.error(f"SaveOrder failed with unhandled error {error_code}: {error_text}")
                 return False
             
             # При успешном SaveOrder инкрементируем seqNumber
             try:
                 cache.incr(self.cache_key)
+                logger.info(f"Successfully incremented seqNumber to {cache.get(self.cache_key)}")
             except ValueError:
-                cache.set(self.cache_key, 0)
-                cache.incr(self.cache_key)
+                cache.set(self.cache_key, 1)
+                logger.info("Reset seqNumber to 1 after ValueError")
+            
+            logger.info(f"Заказ {order_guid} успешно сохранен в R-Keeper")
             return True
+            
         except Exception as e:
             logger.error(f"Ошибка при добавлении позиций: {str(e)}")
             return False
@@ -352,17 +379,49 @@ class RKeeperService:
 </RK7Query>
 '''
         logger.debug(f"XML запрос GetXMLLicenseInstanceSeqNumber: {xml_query}")
-        response = self.session.post(
-            self.api_url, data=xml_query.encode('utf-8'), headers=self.headers, verify=False, timeout=30
-        )
-        response.raise_for_status()
-        root = ET.fromstring(response.text)
-        status = root.get('Status')
-        if status != 'Ok':
-            raise Exception(f"Ошибка GetXMLLicenseInstanceSeqNumber: {root.get('ErrorText', '')}")
-        lic_inst = root.find('.//LicenseInstance')
-        if lic_inst is not None and lic_inst.get('seqNumber'):
-            seq = int(lic_inst.get('seqNumber'))
-            logger.info(f"Получен seqNumber из R-Keeper: {seq}")
-            return seq
-        raise Exception('Не удалось распарсить seqNumber из GetXMLLicenseInstanceSeqNumber') 
+        
+        try:
+            response = self.session.post(
+                self.api_url, data=xml_query.encode('utf-8'), headers=self.headers, verify=False, timeout=30
+            )
+            response.raise_for_status()
+            
+            logger.debug(f"Ответ GetXMLLicenseInstanceSeqNumber: {response.text}")
+            
+            root = ET.fromstring(response.text)
+            status = root.get('Status')
+            if status != 'Ok':
+                error_text = root.get('ErrorText', 'Неизвестная ошибка')
+                error_code = root.get('RK7ErrorN', '')
+                logger.error(f"GetXMLLicenseInstanceSeqNumber failed: {error_code} - {error_text}")
+                raise Exception(f"Ошибка GetXMLLicenseInstanceSeqNumber: {error_text}")
+            
+            lic_inst = root.find('.//LicenseInstance')
+            if lic_inst is not None and lic_inst.get('seqNumber'):
+                seq = int(lic_inst.get('seqNumber'))
+                logger.info(f"Получен seqNumber из R-Keeper: {seq}")
+                return seq
+            else:
+                logger.error("LicenseInstance или seqNumber не найдены в ответе")
+                raise Exception('Не удалось распарсить seqNumber из GetXMLLicenseInstanceSeqNumber')
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Ошибка сети при запросе GetXMLLicenseInstanceSeqNumber: {str(e)}")
+            raise
+        except ET.ParseError as e:
+            logger.error(f"Ошибка парсинга XML ответа GetXMLLicenseInstanceSeqNumber: {str(e)}")
+            raise Exception(f"Ошибка парсинга XML: {str(e)}")
+        except Exception as e:
+            logger.error(f"Неожиданная ошибка в GetXMLLicenseInstanceSeqNumber: {str(e)}")
+            raise
+    
+    def reset_license_seq(self):
+        """Принудительный сброс seqNumber лицензии"""
+        try:
+            logger.info("Принудительный сброс seqNumber лицензии")
+            cache.delete(self.cache_key)
+            logger.info("seqNumber сброшен в кэше")
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка при сбросе seqNumber: {str(e)}")
+            return False 
