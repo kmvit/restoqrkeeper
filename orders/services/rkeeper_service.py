@@ -6,7 +6,7 @@ from django.conf import settings
 from orders.models import Order
 from menu.models import Station, MenuItem
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 import urllib3
 import warnings
 import ssl
