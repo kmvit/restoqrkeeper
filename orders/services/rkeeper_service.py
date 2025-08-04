@@ -1,4 +1,5 @@
 import requests
+import requests.exceptions
 import logging
 import xml.etree.ElementTree as ET
 from django.conf import settings
@@ -272,10 +273,19 @@ class RKeeperService:
         # Получаем текущий seqNumber из кэша или инициализируем новый для первого запроса
         seq = cache.get(self.cache_key)
         if seq is None:
-            # первый запрос для нового экземпляра лицензии (seqNumber=0)
-            seq = 0
-            cache.set(self.cache_key, seq)
-            logger.info("Initial seqNumber set to 0 for new license instance")
+            # Пытаемся получить актуальный seqNumber с сервера
+            try:
+                logger.info("Trying to get current seqNumber from server for initial setup")
+                server_seq = self._get_license_seq()
+                seq = server_seq + 1
+                cache.set(self.cache_key, seq)
+                logger.info(f"Initial seqNumber set to {seq} based on server value {server_seq}")
+            except Exception as e:
+                logger.warning(f"Failed to get seqNumber from server, using 0: {e}")
+                # первый запрос для нового экземпляра лицензии (seqNumber=0)
+                seq = 0
+                cache.set(self.cache_key, seq)
+                logger.info("Initial seqNumber set to 0 for new license instance")
         
         logger.info(f"Используем seqNumber={seq} для SaveOrder (попытка {retry_count + 1})")
         
@@ -332,10 +342,17 @@ class RKeeperService:
                 if error_code in ['5305', '5310']:
                     try:
                         correct_seq = self._get_license_seq()
-                        # Для повторного SaveOrder используем полученный seqNumber
-                        cache.set(self.cache_key, correct_seq)
-                        logger.info(f"Updated seqNumber from server to {correct_seq} for retry")
+                        # Для повторного SaveOrder используем следующий после полученного seqNumber
+                        next_seq = correct_seq + 1
+                        cache.set(self.cache_key, next_seq)
+                        logger.info(f"Updated seqNumber from server {correct_seq} to {next_seq} for retry")
                         return self._add_items_to_order(order_guid, order, station_code, retry_count + 1)
+                    except requests.exceptions.Timeout as e:
+                        logger.error(f"Timeout while getting seqNumber on error {error_code}: {e}")
+                        # При таймауте сбрасываем seqNumber в 0 и не делаем повторную попытку
+                        cache.set(self.cache_key, 0)
+                        logger.info("Reset seqNumber to 0 due to timeout")
+                        return False
                     except Exception as e:
                         logger.error(f"Failed to refresh seqNumber on error {error_code}: {e}")
                         # Если не удалось получить правильный seqNumber, сбрасываем в 0
@@ -362,6 +379,12 @@ class RKeeperService:
             logger.info(f"Заказ {order_guid} успешно сохранен в R-Keeper")
             return True
             
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Таймаут при добавлении позиций в заказ {order_guid}: {str(e)}")
+            # При таймауте сбрасываем seqNumber
+            cache.set(self.cache_key, 0)
+            logger.info("Reset seqNumber to 0 due to timeout in SaveOrder")
+            return False
         except Exception as e:
             logger.error(f"Ошибка при добавлении позиций: {str(e)}")
             return False
@@ -382,7 +405,7 @@ class RKeeperService:
         
         try:
             response = self.session.post(
-                self.api_url, data=xml_query.encode('utf-8'), headers=self.headers, verify=False, timeout=30
+                self.api_url, data=xml_query.encode('utf-8'), headers=self.headers, verify=False, timeout=10
             )
             response.raise_for_status()
             
@@ -424,4 +447,24 @@ class RKeeperService:
             return True
         except Exception as e:
             logger.error(f"Ошибка при сбросе seqNumber: {str(e)}")
+            return False
+    
+    def sync_license_seq(self):
+        """Принудительная синхронизация seqNumber с сервером"""
+        try:
+            logger.info("Принудительная синхронизация seqNumber с сервером")
+            server_seq = self._get_license_seq()
+            next_seq = server_seq + 1
+            cache.set(self.cache_key, next_seq)
+            logger.info(f"seqNumber синхронизирован: сервер={server_seq}, локальный={next_seq}")
+            return True
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Таймаут при синхронизации seqNumber: {str(e)}")
+            cache.set(self.cache_key, 0)
+            logger.info("seqNumber сброшен в 0 из-за таймаута")
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка при синхронизации seqNumber: {str(e)}")
+            cache.set(self.cache_key, 0)
+            logger.info("seqNumber сброшен в 0 из-за ошибки")
             return False 
