@@ -64,7 +64,7 @@ class Order(models.Model):
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлен', auto_now=True)
     payment_id = models.CharField('ID платежа', max_length=100, blank=True, null=True)
-    rkeeper_order_id = models.CharField('ID заказа в R-Keeper', max_length=100, blank=True, null=True)
+    rkeeper_order_id = models.CharField('ID заказа в R-Keeper', max_length=100, blank=True, null=True, unique=True)
     comment = models.TextField('Комментарий', null=True, blank=True)
 
     class Meta:

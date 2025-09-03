@@ -395,26 +395,35 @@ class PaymentCallbackView(View):
                 
             # Обновляем статус заказа в зависимости от статуса платежа
             if status in ['FullyPaid', 'Completed', 'Success']:
-                # Сначала обновляем статус на 'paid'
-                order.status = 'paid'
-                order.save()
-                logger.info(f"Order {order.id} marked as paid")
-                
-                # Затем отправляем заказ в R-Keeper
-                try:
-                    rkeeper_service = RKeeperService()
-                    success = rkeeper_service.send_order(order)
-                    
-                    if success:
-                        # Только после успешной отправки в R-Keeper меняем статус на 'processing'
-                        order.status = 'processing'
+                # Проверяем, не был ли заказ уже отправлен в R-Keeper
+                if order.status == 'processing' or order.rkeeper_order_id:
+                    logger.info(f"Order {order.id} already sent to R-Keeper (status: {order.status}, rkeeper_id: {order.rkeeper_order_id}), skipping duplicate send")
+                    # Просто помечаем как оплаченный, если еще не помечен
+                    if order.status != 'paid':
+                        order.status = 'paid'
                         order.save()
-                        logger.info(f"Order {order.id} successfully sent to R-Keeper and marked as processing")
-                    else:
-                        logger.error(f"Failed to send order {order.id} to R-Keeper")
-                except Exception as e:
-                    logger.error(f"Error sending order to R-Keeper: {str(e)}", exc_info=True)
+                        logger.info(f"Order {order.id} marked as paid (was already in R-Keeper)")
+                else:
+                    # Сначала обновляем статус на 'paid'
+                    order.status = 'paid'
+                    order.save()
+                    logger.info(f"Order {order.id} marked as paid")
                     
+                    # Затем отправляем заказ в R-Keeper
+                    try:
+                        rkeeper_service = RKeeperService()
+                        success = rkeeper_service.send_order(order)
+                        
+                        if success:
+                            # Только после успешной отправки в R-Keeper меняем статус на 'processing'
+                            order.status = 'processing'
+                            order.save()
+                            logger.info(f"Order {order.id} successfully sent to R-Keeper and marked as processing")
+                        else:
+                            logger.error(f"Failed to send order {order.id} to R-Keeper")
+                    except Exception as e:
+                        logger.error(f"Error sending order to R-Keeper: {str(e)}", exc_info=True)
+                
             elif status in ['Cancelled', 'Canceled']:
                 order.status = 'cancelled'
                 order.save()

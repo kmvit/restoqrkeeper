@@ -74,6 +74,11 @@ class RKeeperService:
         """
         logger.info(f"Отправка заказа #{order.id} в R-Keeper")
         
+        # Проверяем, не был ли заказ уже отправлен в R-Keeper
+        if order.rkeeper_order_id:
+            logger.info(f"Заказ #{order.id} уже был отправлен в R-Keeper с ID: {order.rkeeper_order_id}, пропускаем повторную отправку")
+            return order.rkeeper_order_id
+        
         # Получаем станцию из сессии или используем стандартную
         try:
             # Получаем станцию
